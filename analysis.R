@@ -16,3 +16,30 @@ pheno<-data.frame(oldName=names(peptides)[names1!=""],ptid=names2[names1!="",1],
                   timept=names2[names1!="",2],replicate=as.integer(names2[names1!="",3]))
 pheno$newName<-paste0("rep_",1L:length(pheno$oldName))
 names(peptides)[match(pheno$oldName,names(peptides))]<-pheno$newName
+
+# Phenotype data:
+groups<-read.csv(file="~/gdrive/Athro/groups_20180515.csv")
+groups$ptid<-as.character(groups$ptid)
+groups$Group<-"sCAD"
+groups$Group[!is.na(groups$MIGroup)]<-groups$MIGroup[!is.na(groups$MIGroup)]
+
+# Wide data:
+peptidesW<-peptides %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
+  gather(key="rep",value="value",-Name)
+peptidesW<-pheno %>% left_join(groups) %>% left_join(peptidesW,by=c("newName"="rep"))
+peptidesW$GroupTime<-paste(peptidesW$Group,peptidesW$timept,sep=".")
+peptidesW<-peptidesW %>% arrange(GroupTime,ptid,replicate)
+temp1<-peptidesW %>% select(GroupTime,ptid,replicate) %>% unique()
+temp1$uID<-1L:nrow(temp1)
+peptidesW<-temp1 %>% left_join(peptidesW)
+
+########### Plots ###########
+ggplot(data=peptidesW,aes(x=uID,group=newName,color=GroupTime,y=log2(value)))+
+         geom_boxplot()+theme_bw()
+
+########### Normalization ###########
+m0<-as.matrix(peptides[,grepl("rep",names(peptides))])
+
+# Columnwise total intensity normalization:
+cSums<-apply(m0,2,sum)
+cFac<-cSums/mean(cSums)
