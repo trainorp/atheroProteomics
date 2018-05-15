@@ -28,14 +28,20 @@ peptidesW<-peptides %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.Wit
   gather(key="rep",value="value",-Name)
 peptidesW<-pheno %>% left_join(groups) %>% left_join(peptidesW,by=c("newName"="rep"))
 peptidesW$GroupTime<-paste(peptidesW$Group,peptidesW$timept,sep=".")
+peptidesW$GroupTime<-factor(peptidesW$GroupTime,
+  levels=c("sCAD.FU","sCAD.T0","Type 1.FU","Type 1.T0","Type 2.FU","Type 2.T0",
+           "Indeterminate.FU","Indeterminate.T0"))
+
 peptidesW<-peptidesW %>% arrange(GroupTime,ptid,replicate)
 temp1<-peptidesW %>% select(GroupTime,ptid,replicate) %>% unique()
-temp1$uID<-1L:nrow(temp1)
+temp1$uID<-as.factor(1L:nrow(temp1))
 peptidesW<-temp1 %>% left_join(peptidesW)
 
 ########### Plots ###########
+png(file="plots/peptideNoNorm.png",height=5,width=15,units="in",res=300)
 ggplot(data=peptidesW,aes(x=uID,group=newName,color=GroupTime,y=log2(value)))+
          geom_boxplot()+theme_bw()
+dev.off()
 
 ########### Normalization ###########
 m0<-as.matrix(peptides[,grepl("rep",names(peptides))])
