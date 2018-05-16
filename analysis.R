@@ -40,17 +40,23 @@ makeWideFun<-function(data){
   peptidesL<-temp1 %>% left_join(peptidesL)
   return(peptidesL)
 }
-peptidesL<-makeWideFun(peptides)
-
-########### Plots ###########
-png(file="plots/peptideNoNorm.png",height=5,width=10,units="in",res=300)
-p0<-ggplot(data=peptidesL,aes(x=uID,group=newName,color=GroupTime,y=log2(Intensity)))+
-         geom_boxplot()+theme_bw()+xlab("")+theme(axis.text.x=element_blank())
-show(p0)
-dev.off()
 
 ########### Normalization ###########
 m0<-as.matrix(peptides[,grepl("rep",names(peptides))])
+
+# Minimum value imputation:
+mins<-apply(m0,2,function(x) min(x[x>0]))
+for(i in 1:ncol(m0)){
+  m0[,i][m0[,i]<1e-6]<-mins[i]
+}
+peptides[,grepl("rep",names(peptides))]<-m0
+
+peptidesL<-makeWideFun(peptides)
+png(file="plots/peptideNoNorm.png",height=5,width=10,units="in",res=300)
+p0<-ggplot(data=peptidesL,aes(x=uID,group=newName,color=GroupTime,y=log2(Intensity)))+
+  geom_boxplot()+theme_bw()+xlab("")+theme(axis.text.x=element_blank())
+show(p0)
+dev.off()
 
 # Columnwise total intensity normalization:
 cSums<-apply(m0,2,sum)
@@ -70,19 +76,6 @@ png(file="plots/peptideNoneVColNorm.png",height=10,width=10,units="in",res=300)
 grid.arrange(p0,p1,nrow=2)
 dev.off()
 
-# Beta gal:
-bGalFun<-function(data){
-  bGal<-data %>% filter(grepl("P00722",ParentProtein.FullName))
-  bGalL<-bGal %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
-    gather(key="rep",value="Intensity",-Name)
-  bGalLNames<-bGalL %>% select(Name) %>% unique()
-  bGalLNames$id<-as.factor(1:nrow(bGalLNames))
-  bGalL<-bGalLNames %>% left_join(bGalL)
-  bGalPlot<-ggplot(bGalL,aes(x=rep,y=log2(Intensity),group=Name,color=id))+
-    geom_line()+theme_bw()
-  return(bGalPlot)
-}
-
 # Quantile normalization:
 m2<-preprocessCore::normalize.quantiles(m0)
 peptides2<-peptides
@@ -94,6 +87,67 @@ p2<-ggplot(data=peptidesL2,aes(x=uID,group=newName,color=GroupTime,y=log2(Intens
 show(p2)
 dev.off()
 
-bGalFun(peptides)
+# Cyclic loess:
+m3<-limma::normalizeCyclicLoess(log2(m0))
+m3<-2**m3
+peptides3<-peptides
+peptides3[,grepl("rep",names(peptides3))]<-m3
+peptidesL3<-makeWideFun(peptides3)
+png(file="plots/peptideFastCyclicLoess.png",height=5,width=10,units="in",res=300)
+p3<-ggplot(data=peptidesL3,aes(x=uID,group=newName,color=GroupTime,y=log2(Intensity)))+
+  geom_boxplot()+theme_bw()+xlab("")+theme(axis.text.x=element_blank())
+show(p3)
+dev.off()
+
+# Cyclic loess bGal only:
+bGalWeights<-as.numeric(grepl("P00722",peptides$Parent.Protein) & 
+         peptides$Percent.Files.With.Good.Quant>.99)
+m4<-limma::normalizeCyclicLoess(log2(m0),weights = bGalWeights)
+m4<-2**m4
+peptides4<-peptides
+peptides4[,grepl("rep",names(peptides4))]<-m4
+peptidesL4<-makeWideFun(peptides4)
+png(file="plots/peptideFastCyclicLoessbGalOnly.png",height=5,width=10,units="in",res=300)
+p4<-ggplot(data=peptidesL4,aes(x=uID,group=newName,color=GroupTime,y=log2(Intensity)))+
+  geom_boxplot()+theme_bw()+xlab("")+theme(axis.text.x=element_blank())
+show(p4)
+dev.off()
+
+# Cyclic loess half & half bGal only:
+bGalWeights2<-bGalWeights+.2
+bGalWeights2<-ifelse(bGalWeights2>1,1.0,bGalWeights2)
+m5<-limma::normalizeCyclicLoess(log2(m0),weights = bGalWeights2)
+m5<-2**m5
+peptides5<-peptides
+peptides5[,grepl("rep",names(peptides5))]<-m5
+peptidesL5<-makeWideFun(peptides5)
+png(file="plots/peptideFastCyclicLoessbGalHeavy.png",height=5,width=10,units="in",res=300)
+p5<-ggplot(data=peptidesL5,aes(x=uID,group=newName,color=GroupTime,y=log2(Intensity)))+
+  geom_boxplot()+theme_bw()+xlab("")+theme(axis.text.x=element_blank())
+show(p5)
+dev.off()
+
+# Beta gal:
+bGalFun<-function(data){
+  bGal<-data %>% filter(grepl("P00722",ParentProtein.FullName) & 
+                          Percent.Files.With.Good.Quant>.99)
+  set.seed(3)
+  bGalShort<-sample(bGal$Name,8)
+  bGalL<-bGal %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
+    gather(key="rep",value="Intensity",-Name)
+  bGalLNames<-bGalL %>% select(Name) %>% unique()
+  bGalLNames$id<-as.factor(1:nrow(bGalLNames))
+  bGalL<-bGalLNames %>% left_join(bGalL)
+  bGalPlot<-ggplot(bGalL,aes(x=rep,y=log2(Intensity),group=Name,color=id))+
+    geom_line()+theme_bw()
+  bGalPlot2<-ggplot(bGalL %>% filter(Name %in% bGalShort),
+                    aes(x=rep,y=log2(Intensity),group=Name,color=id))+
+    geom_line()+theme_bw()
+  list(bGalPlot,bGalPlot2)
+}
+bGalPlot<-bGalFun(peptides)
 bGalFun(peptides1)
 bGalFun(peptides2)
+bGalFun(peptides3)
+bGalFun(peptides4)
+bGalFun(peptides5)
