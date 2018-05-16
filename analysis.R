@@ -128,7 +128,7 @@ show(p5)
 dev.off()
 
 # Beta gal:
-bGalFun<-function(data){
+bGalFun<-function(data,method){
   bGal<-data %>% filter(grepl("P00722",ParentProtein.FullName) & 
                           Percent.Files.With.Good.Quant>.99)
   set.seed(3)
@@ -138,16 +138,23 @@ bGalFun<-function(data){
   bGalLNames<-bGalL %>% select(Name) %>% unique()
   bGalLNames$id<-as.factor(1:nrow(bGalLNames))
   bGalL<-bGalLNames %>% left_join(bGalL)
-  bGalPlot<-ggplot(bGalL,aes(x=rep,y=log2(Intensity),group=Name,color=id))+
-    geom_line()+theme_bw()
-  bGalPlot2<-ggplot(bGalL %>% filter(Name %in% bGalShort),
+  fName<-paste0("plots/bGalPeptides_",method,"_Full.png")
+  png(filename=fName,height=5,width=8,units="in",res=300)
+  bGalp<-ggplot(bGalL,aes(x=rep,y=log2(Intensity),group=Name,color=id))+
+    geom_line()+ylim(23,32)+theme_bw()+xlab("Replicate")
+  print(bGalp)
+  dev.off()
+  fName2<-paste0("plots/bGalPeptides_",method,"_Samp.png")
+  png(filename=fName2,height=5,width=8,units="in",res=300)
+  bGalp2<-ggplot(bGalL %>% filter(Name %in% bGalShort),
                     aes(x=rep,y=log2(Intensity),group=Name,color=id))+
-    geom_line()+theme_bw()
-  list(bGalPlot,bGalPlot2)
+    geom_line()+ylim(26,31)+theme_bw()+xlab("Replicate")
+  print(bGalp2)
+  dev.off()
 }
-bGalPlot<-bGalFun(peptides)
-bGalFun(peptides1)
-bGalFun(peptides2)
-bGalFun(peptides3)
-bGalFun(peptides4)
-bGalFun(peptides5)
+bGalFun(data=peptides,method="none")
+bGalFun(peptides1,method="columnTI")
+bGalFun(peptides2,method="Quant")
+bGalFun(peptides3,method="FCycLoess")
+bGalFun(peptides4,method="FCycLoessbGal")
+bGalFun(peptides5,method="FCycLoessbGalLight")
