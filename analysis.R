@@ -1,5 +1,5 @@
 ########### Prereqs ###########
-options(stringsAsFactors = FALSE,scipen = 600)
+options(stringsAsFactors=FALSE,scipen=600)
 library(tidyverse)
 library(gridExtra)
 
@@ -129,6 +129,7 @@ dev.off()
 
 # Beta gal:
 bGalFun<-function(data,method){
+  # betaGal data:
   bGal<-data %>% filter(grepl("P00722",ParentProtein.FullName) & 
                           Percent.Files.With.Good.Quant>.99)
   set.seed(3)
@@ -138,6 +139,12 @@ bGalFun<-function(data,method){
   bGalLNames<-bGalL %>% select(Name) %>% unique()
   bGalLNames$id<-as.factor(1:nrow(bGalLNames))
   bGalL<-bGalLNames %>% left_join(bGalL)
+  
+  # CVs:
+  cv<-bGalL %>% group_by(Name) %>% summarize(cv=sd(log2(Intensity))/mean(log2(Intensity))*100)
+  names(cv)[names(cv)=="cv"]<-paste0(method,"CV")
+  
+  # Plots:
   fName<-paste0("plots/bGalPeptides_",method,"_Full.png")
   png(filename=fName,height=5,width=8,units="in",res=300)
   bGalp<-ggplot(bGalL,aes(x=rep,y=log2(Intensity),group=Name,color=id))+
@@ -151,10 +158,15 @@ bGalFun<-function(data,method){
     geom_line()+ylim(26,31)+theme_bw()+xlab("Replicate")
   print(bGalp2)
   dev.off()
+  
+  return(cv)
 }
-bGalFun(data=peptides,method="none")
-bGalFun(peptides1,method="columnTI")
-bGalFun(peptides2,method="Quant")
-bGalFun(peptides3,method="FCycLoess")
-bGalFun(peptides4,method="FCycLoessbGal")
-bGalFun(peptides5,method="FCycLoessbGalLight")
+bGalCVs<-cbind(
+  bGalFun(data=peptides,method="none"),
+  bGalFun(peptides1,method="columnTI")[,-1],
+  bGalFun(peptides2,method="Quant")[,-1],
+  bGalFun(peptides3,method="FCycLoess")[,-1],
+  bGalFun(peptides4,method="FCycLoessbGal")[,-1],
+  bGalFun(peptides5,method="FCycLoessbGalLight")[,-1]
+)
+write.csv(bGalCVs,file="bGalCVs.csv",row.names=FALSE)
