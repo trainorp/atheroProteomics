@@ -17,6 +17,7 @@ pheno<-data.frame(oldName=names(peptides)[names1!=""],ptid=names2[names1!="",1],
                   timept=names2[names1!="",2],replicate=as.integer(names2[names1!="",3]))
 pheno$newName<-paste0("rep_",1L:length(pheno$oldName))
 names(peptides)[match(pheno$oldName,names(peptides))]<-pheno$newName
+names(proteins)[match(pheno$oldName,names(proteins))]<-pheno$newName
 pheno$uSamp<-paste(pheno$ptid,pheno$timept,sep="_")
 
 # Phenotype data:
@@ -195,16 +196,33 @@ bGalCVs<-cbind(
 # write.csv(bGalCVs,file="bGalCVs.csv",row.names=FALSE)
 
 ########### Combine injections ###########
-df2<-data.frame(Name=peptides1$Name)
-for(uSamp in unique(pheno$uSamp)){
-  df1<-data.frame(value=apply(peptides1[,pheno$newName[pheno$uSamp==uSamp]],1,mean))
-  names(df1)[names(df1)=="value"]<-paste0("rep_",uSamp)
-  df2<-cbind(df2,df1)
+combFun<-function(Names,data){
+  # Output dataframe:
+  df2<-data.frame(Name=Names)
+  
+  # Combine injections
+  for(uSamp in unique(pheno$uSamp)){
+    df1<-data.frame(value=apply(data[,pheno$newName[pheno$uSamp==uSamp]],1,mean))
+    names(df1)[names(df1)=="value"]<-paste0("rep_",uSamp)
+    df2<-cbind(df2,df1)
+  }
+  
+  # Median scale
+  meds<-apply(df2[,grepl("rep",names(df2))],1,median)
+  for(i in 1:nrow(df2[,grepl("rep",names(df2))])){
+    df2[,grepl("rep",names(df2))][i,]<-df2[,grepl("rep",names(df2))][i,]/meds[i]-1
+  }
+  return(df2)
 }
-meds<-apply(df2[,grepl("rep",names(df2))],1,median)
-for(i in 1:nrow(df2[,grepl("rep",names(df2))])){
-  df2[,grepl("rep",names(df2))][i,]<-df2[,grepl("rep",names(df2))][i,]/meds[i]-1
-}
+idk<-combFun(Names=peptides1$Name,data=peptides1)
+idk2<-combFun(Names=proteins$Name,data=proteins)
 
 rownames(df2)<-df2$Name
 df2$Name<-NULL
+
+########### How peptides were aggregated into proteins ###########
+pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
+  filter(Use.For.Quant=="Yes") %>% 
+  group_by(Parent.Protein) %>% summarize(sum(rep_1),sum(rep_2))
+
+
