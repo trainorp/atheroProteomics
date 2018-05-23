@@ -26,6 +26,8 @@ groups$ptid<-as.character(groups$ptid)
 groups$Group<-"sCAD"
 groups$Group[!is.na(groups$MIGroup)]<-groups$MIGroup[!is.na(groups$MIGroup)]
 
+pheno<-pheno %>% left_join(groups)
+
 # Wide data:
 makeWideFun<-function(data){
   peptidesL<-data %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
@@ -225,4 +227,6 @@ pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %
   filter(Use.For.Quant=="Yes") %>% 
   group_by(Parent.Protein) %>% summarize(sum(rep_1),sum(rep_2))
 
-
+###########  ###########
+reps<-names(idk2)[grepl("rep_",names(idk2))]
+str_split(reps,"_",simplify=TRUE)[,2]
