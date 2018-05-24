@@ -3,7 +3,7 @@ options(stringsAsFactors=FALSE,scipen=600)
 library(tidyverse)
 library(gridExtra)
 
-setwd("~/gdrive/AthroProteomics")
+setwd("~/gdrive/AthroProteomics/data")
 peptides<-read.csv('peptide_table_20180514.csv')
 proteins<-read.csv('protein_table_20180514.csv')
 
@@ -44,6 +44,20 @@ makeWideFun<-function(data){
   peptidesL<-temp1 %>% left_join(peptidesL)
   return(peptidesL)
 }
+
+# Export peptide sequences for protein query:
+pepSeqs<-peptides$Name
+pepSeqs<-gsub("(\\[.*?\\])","",pepSeqs)
+pepSeqsStr<-paste(pepSeqs,collapse=",")
+# pepSeqsStr<-paste0("'",pepSeqsStr,"'")
+write.table(pepSeqsStr,file="pepSeqsStr.txt",quote=FALSE,row.names=FALSE)
+
+# Export other peptide annotation:
+pepAnno<-peptides %>% select(Name,Quality.Score,ParentProtein.FullName,Use.For.Quant,
+                             Percent.Files.With.Good.Quant)
+save(pepAnno,file="pepAnno.RData")
+
+setwd("~/gdrive/AthroProteomics/")
 
 ########### Normalization ###########
 m0<-as.matrix(peptides[,grepl("rep",names(peptides))])
@@ -218,9 +232,6 @@ combFun<-function(Names,data){
 }
 idk<-combFun(Names=peptides1$Name,data=peptides1)
 idk2<-combFun(Names=proteins$Name,data=proteins)
-
-rownames(df2)<-df2$Name
-df2$Name<-NULL
 
 ########### How peptides were aggregated into proteins ###########
 pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
