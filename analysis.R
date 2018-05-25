@@ -49,13 +49,12 @@ makeWideFun<-function(data){
 pepSeqs<-peptides$Name
 pepSeqs<-gsub("(\\[.*?\\])","",pepSeqs)
 pepSeqsStr<-paste(pepSeqs,collapse=",")
-# pepSeqsStr<-paste0("'",pepSeqsStr,"'")
-write.table(pepSeqsStr,file="pepSeqsStr.txt",quote=FALSE,row.names=FALSE)
+# write.table(pepSeqsStr,file="pepSeqsStr.txt",quote=FALSE,row.names=FALSE)
 
 # Export other peptide annotation:
 pepAnno<-peptides %>% select(Name,Quality.Score,ParentProtein.FullName,Use.For.Quant,
                              Percent.Files.With.Good.Quant)
-save(pepAnno,file="pepAnno.RData")
+# save(pepAnno,file="pepAnno.RData")
 
 setwd("~/gdrive/AthroProteomics/")
 
