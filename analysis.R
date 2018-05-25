@@ -210,6 +210,36 @@ bGalCVs<-cbind(
 )
 # write.csv(bGalCVs,file="bGalCVs.csv",row.names=FALSE)
 
+########### Un log-transform ###########
+
+
+########### My beta-gal protein normalization ###########
+load("~/gdrive/AthroProteomics/data/pepAnno2.RData")
+pinEcoli<-pepAnno2 %>% filter(grepl("P00722",proteins) & goodQuant>.99 
+                              & pinUseQuant=="Yes")
+myEColi<-pepAnno2 %>% filter(grepl("P00722",proteins) & goodQuant>.99 
+                             & !grepl("(\\[.*?\\])",pepSeq))
+
+myEColiIntensPep00<-peptides00[peptides00$Name %in% myEColi$pepSeq,
+                          grepl("rep_",names(peptides00))]
+myEColiIntensPep1<-2**(peptides1[peptides1$Name %in% myEColi$pepSeq,
+                               grepl("rep_",names(peptides1))])
+myEColiIntensPep2<-2**(peptides2[peptides2$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides2))])
+myEColiIntensPep3<-2**(peptides3[peptides3$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides3))])
+myEColiIntensPep4<-2**(peptides4[peptides4$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides4))])
+myEColiIntensPep5<-2**(peptides5[peptides5$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides5))])
+
+sd(apply(myEColiIntensPep00,2,sum))/mean(apply(myEColiIntensPep00,2,sum))
+sd(apply(myEColiIntensPep1,2,sum))/mean(apply(myEColiIntensPep1,2,sum))
+sd(apply(myEColiIntensPep2,2,sum))/mean(apply(myEColiIntensPep2,2,sum))
+sd(apply(myEColiIntensPep3,2,sum))/mean(apply(myEColiIntensPep3,2,sum))
+sd(apply(myEColiIntensPep4,2,sum))/mean(apply(myEColiIntensPep4,2,sum))
+sd(apply(myEColiIntensPep5,2,sum))/mean(apply(myEColiIntensPep5,2,sum))
+
 ########### Combine injections ###########
 combFun<-function(Names,data){
   # Output dataframe:
@@ -237,6 +267,3 @@ pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %
   filter(Use.For.Quant=="Yes") %>% 
   group_by(Parent.Protein) %>% summarize(sum(rep_1),sum(rep_2))
 
-###########  ###########
-reps<-names(idk2)[grepl("rep_",names(idk2))]
-str_split(reps,"_",simplify=TRUE)[,2]

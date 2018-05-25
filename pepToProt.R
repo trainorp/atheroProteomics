@@ -35,4 +35,10 @@ nrow(pepAnno) #3,544
 
 ########### Counts ###########
 pepAnno2<-pepAnno %>% left_join(srma,by=c("pepSeq"="sequence"))
+pepAnno2<-pepAnno2 %>% select(pepSeq=Name,pepSeq2=pepSeq,quality=Quality.Score,
+                    goodQuant=Percent.Files.With.Good.Quant,
+                    proteins,protN,pinProtName=ParentProtein.FullName,
+                    pinUseQuant=Use.For.Quant,
+                    atlasProt=Prot_acc,SSR,length,type,PA_Acc,mw,e_charge,
+                    n_map_core,n_map_all)
 save(pepAnno2,file="pepAnno2.RData")
