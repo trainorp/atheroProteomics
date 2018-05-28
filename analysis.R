@@ -87,14 +87,30 @@ cSums<-apply(m00,2,sum)
 cFac<-cSums/mean(cSums)
 m1<-m00
 for(i in 1:ncol(m1)) m1[,i]<-m1[,i]/cFac[i]
-peptides1<-peptides00
+m1b<-m1
+# Median normalization
+cMed<-apply(m1,2,median)
+cFac2<-cMed/mean(cMed)
+for(i in 1:ncol(m1b)) m1b[,i]<-m1b[,i]/cFac2[i]
+
+peptides1b<-peptides1<-peptides00
 peptides1[,grepl("rep",names(peptides1))]<-log2(m1)
+peptides1b[,grepl("rep",names(peptides1b))]<-log2(m1b)
+
 peptidesL1<-makeWideFun(peptides1)
+peptidesL1b<-makeWideFun(peptides1b)
 # png(file="plots/peptideColNorm.png",height=5,width=10,units="in",res=300)
 p1<-ggplot(data=peptidesL1,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
 show(p1)
+# dev.off()
+
+# png(file="plots/peptideColMedNorm.png",height=5,width=10,units="in",res=300)
+p1b<-ggplot(data=peptidesL1b,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
+  geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
+  theme(axis.text.x=element_blank())
+show(p1b)
 # dev.off()
 
 # png(file="plots/peptideNoneVColNorm.png",height=10,width=10,units="in",res=300)
@@ -184,24 +200,25 @@ bGalFun<-function(data,method){
   
   # Plots:
   fName<-paste0("plots/bGalPeptides_",method,"_Full.png")
-  png(filename=fName,height=5,width=8,units="in",res=300)
+  # png(filename=fName,height=5,width=8,units="in",res=300)
   bGalp<-ggplot(bGalL,aes(x=rep,y=Intensity,group=Name,color=id))+
     geom_line()+ylim(23,32)+theme_bw()+xlab("Replicate")+ylab("Intensity (log scale)")
   print(bGalp)
-  dev.off()
+  # dev.off()
   fName2<-paste0("plots/bGalPeptides_",method,"_Samp.png")
-  png(filename=fName2,height=5,width=8,units="in",res=300)
+  # png(filename=fName2,height=5,width=8,units="in",res=300)
   bGalp2<-ggplot(bGalL %>% filter(Name %in% bGalShort),
                     aes(x=rep,y=Intensity,group=Name,color=id))+
     geom_line()+ylim(26,31.75)+theme_bw()+xlab("Replicate")+ylab("Intensity (log scale)")
   print(bGalp2)
-  dev.off()
+  # dev.off()
   
   return(cv)
 }
 bGalCVs<-cbind(
   bGalFun(data=peptides,method="none"),
   bGalFun(data=peptides1,method="columnTI")[,-1],
+  bGalFun(data=peptides1b,method="columnTIMed")[,-1],
   bGalFun(peptides2,method="Quant")[,-1],
   bGalFun(peptides3,method="FCycLoess")[,-1],
   bGalFun(peptides4,method="FCycLoessbGal")[,-1],
@@ -211,7 +228,16 @@ bGalCVs<-cbind(
 # write.csv(bGalCVs,file="bGalCVs.csv",row.names=FALSE)
 
 ########### Un log-transform ###########
-
+peptides1[,grepl("rep_",names(peptides1))]<-
+  2**peptides1[,grepl("rep_",names(peptides1))]
+peptides2[,grepl("rep_",names(peptides2))]<-
+  2**peptides2[,grepl("rep_",names(peptides2))]
+peptides3[,grepl("rep_",names(peptides3))]<-
+  2**peptides3[,grepl("rep_",names(peptides3))]
+peptides4[,grepl("rep_",names(peptides4))]<-
+  2**peptides4[,grepl("rep_",names(peptides4))]
+peptides5[,grepl("rep_",names(peptides5))]<-
+  2**peptides5[,grepl("rep_",names(peptides5))]
 
 ########### My beta-gal protein normalization ###########
 load("~/gdrive/AthroProteomics/data/pepAnno2.RData")
@@ -222,16 +248,16 @@ myEColi<-pepAnno2 %>% filter(grepl("P00722",proteins) & goodQuant>.99
 
 myEColiIntensPep00<-peptides00[peptides00$Name %in% myEColi$pepSeq,
                           grepl("rep_",names(peptides00))]
-myEColiIntensPep1<-2**(peptides1[peptides1$Name %in% myEColi$pepSeq,
-                               grepl("rep_",names(peptides1))])
-myEColiIntensPep2<-2**(peptides2[peptides2$Name %in% myEColi$pepSeq,
-                                 grepl("rep_",names(peptides2))])
-myEColiIntensPep3<-2**(peptides3[peptides3$Name %in% myEColi$pepSeq,
-                                 grepl("rep_",names(peptides3))])
-myEColiIntensPep4<-2**(peptides4[peptides4$Name %in% myEColi$pepSeq,
-                                 grepl("rep_",names(peptides4))])
-myEColiIntensPep5<-2**(peptides5[peptides5$Name %in% myEColi$pepSeq,
-                                 grepl("rep_",names(peptides5))])
+myEColiIntensPep1<-peptides1[peptides1$Name %in% myEColi$pepSeq,
+                               grepl("rep_",names(peptides1))]
+myEColiIntensPep2<-peptides2[peptides2$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides2))]
+myEColiIntensPep3<-peptides3[peptides3$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides3))]
+myEColiIntensPep4<-peptides4[peptides4$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides4))]
+myEColiIntensPep5<-peptides5[peptides5$Name %in% myEColi$pepSeq,
+                                 grepl("rep_",names(peptides5))]
 
 sd(apply(myEColiIntensPep00,2,sum))/mean(apply(myEColiIntensPep00,2,sum))
 sd(apply(myEColiIntensPep1,2,sum))/mean(apply(myEColiIntensPep1,2,sum))
@@ -252,15 +278,20 @@ combFun<-function(Names,data){
     df2<-cbind(df2,df1)
   }
   
-  # Median scale
+  # Median scale & log-transform
   meds<-apply(df2[,grepl("rep",names(df2))],1,median)
   for(i in 1:nrow(df2[,grepl("rep",names(df2))])){
-    df2[,grepl("rep",names(df2))][i,]<-df2[,grepl("rep",names(df2))][i,]/meds[i]-1
+    df2[,grepl("rep",names(df2))][i,]<-log2(df2[,grepl("rep",names(df2))][i,]/meds[i])
   }
   return(df2)
 }
 idk<-combFun(Names=peptides1$Name,data=peptides1)
-idk2<-combFun(Names=proteins$Name,data=proteins)
+
+########### Peptide difference at baseline ###########
+idk2<-idk %>% gather(key="rep",value="Intensity",-Name)
+idk2$ptid<-str_split(idk2$rep,"_",simplify=TRUE)[,2]
+idk2$timept<-str_split(idk2$rep,"_",simplify=TRUE)[,3]
+
 
 ########### How peptides were aggregated into proteins ###########
 pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
