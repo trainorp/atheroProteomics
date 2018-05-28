@@ -2,6 +2,7 @@
 options(stringsAsFactors=FALSE,scipen=600)
 library(tidyverse)
 library(gridExtra)
+library(emmeans)
 
 setwd("~/gdrive/AthroProteomics/data")
 peptides<-read.csv('peptide_table_20180514.csv')
@@ -288,10 +289,50 @@ combFun<-function(Names,data){
 idk<-combFun(Names=peptides1$Name,data=peptides1)
 
 ########### Peptide difference at baseline ###########
-idk2<-idk %>% gather(key="rep",value="Intensity",-Name)
-idk2$ptid<-str_split(idk2$rep,"_",simplify=TRUE)[,2]
-idk2$timept<-str_split(idk2$rep,"_",simplify=TRUE)[,3]
+pepDF<-idk %>% gather(key="rep",value="Intensity",-Name)
+pepDF$ptid<-str_split(pepDF$rep,"_",simplify=TRUE)[,2]
+pepDF$timept<-str_split(pepDF$rep,"_",simplify=TRUE)[,3]
+pepDF<-pepDF %>% left_join(groups)
 
+unqPep<-unique(pepDF$Name)
+pepDFRes<-data.frame(unqPep=unqPep,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
+                     T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,
+                     T0_Type1_Type2=NA, T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,
+                     T0_Type1_Type2_p=NA)
+for(i in 1:length(unqPep)){
+  # Linear Model
+  lm1<-lm(Intensity~Group,data=pepDF %>% 
+            filter(Name==unqPep[i] & Group!="Indeterminate"))
+  
+  # Overall ANOVA:
+  lm1FStat<-summary(lm1)$fstatistic
+  pepDFRes$T0Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
+  
+  # Means:
+  lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
+  pepDFRes$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
+  pepDFRes$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
+  pepDFRes$T0_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
+  
+  # Pairwise: 
+  lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group),adjust="none"))
+  pepDFRes$T0_Type1_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 1"])
+  pepDFRes$T0_Type2_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 2"])
+  pepDFRes$T0_Type1_Type2[i]<-
+    (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  # Pairwise p-value
+  pepDFRes$T0_Type1_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 1"])
+  pepDFRes$T0_Type2_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 2"])
+  pepDFRes$T0_Type1_Type2_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1 - Type 2"])
+}
+
+pepDFRes<-pepDFRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
 
 ########### How peptides were aggregated into proteins ###########
 pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
