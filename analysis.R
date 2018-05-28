@@ -298,13 +298,17 @@ unqPep<-unique(pepDF$Name)
 pepDFRes<-data.frame(unqPep=unqPep,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
                      T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,
                      T0_Type1_Type2=NA, T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,
-                     T0_Type1_Type2_p=NA)
+                     T0_Type1_Type2_p=NA,
+                     TFU_sCAD=NA,TFU_Type1=NA,TFU_Type2=NA,
+                     D_Anova=NA,D_Type1_sCAD=NA,D_Type2_sCAD=NA,
+                     D_Type1_Type2=NA,D_Type1_sCAD_p=NA,D_Type2_sCAD_p=NA,
+                     D_Type1_Type2_p=NA)
 for(i in 1:length(unqPep)){
   # Linear Model
-  lm1<-lm(Intensity~Group,data=pepDF %>% 
+  lm1<-lm(Intensity~timept*Group,data=pepDF %>% 
             filter(Name==unqPep[i] & Group!="Indeterminate"))
   
-  # Overall ANOVA:
+  # Overall T0 ANOVA:
   lm1FStat<-summary(lm1)$fstatistic
   pepDFRes$T0Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
   
