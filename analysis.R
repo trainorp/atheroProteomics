@@ -3,6 +3,7 @@ options(stringsAsFactors=FALSE,scipen=600)
 library(tidyverse)
 library(gridExtra)
 library(emmeans)
+library(multcomp)
 
 setwd("~/gdrive/AthroProteomics/data")
 peptides<-read.csv('peptide_table_20180514.csv')
@@ -295,14 +296,14 @@ pepDF$timept<-str_split(pepDF$rep,"_",simplify=TRUE)[,3]
 pepDF<-pepDF %>% left_join(groups)
 
 unqPep<-unique(pepDF$Name)
-pepDFRes<-data.frame(unqPep=unqPep,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
-                     T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,
-                     T0_Type1_Type2=NA, T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,
-                     T0_Type1_Type2_p=NA,
+pepDFRes<-data.frame(unqPep=unqPep,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,Anova=NA,
+                     T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,T0_Type1_Type2=NA, 
+                     T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,T0_Type1_Type2_p=NA,
                      TFU_sCAD=NA,TFU_Type1=NA,TFU_Type2=NA,
-                     D_Anova=NA,D_Type1_sCAD=NA,D_Type2_sCAD=NA,
-                     D_Type1_Type2=NA,D_Type1_sCAD_p=NA,D_Type2_sCAD_p=NA,
-                     D_Type1_Type2_p=NA)
+                     D_sCAD=NA, D_Type1=NA, D_Type2=NA,
+                     D_sCAD_p=NA, D_Type1_p=NA, D_Type2_p=NA,
+                     D_Anova=NA,D_Type1_sCAD=NA,D_Type2_sCAD=NA,D_Type1_Type2=NA,
+                     D_Type1_sCAD_p=NA,D_Type2_sCAD_p=NA,D_Type1_Type2_p=NA)
 for(i in 1:length(unqPep)){
   # Linear Model
   lm1<-lm(Intensity~timept*Group,data=pepDF %>% 
@@ -310,30 +311,65 @@ for(i in 1:length(unqPep)){
   
   # Overall T0 ANOVA:
   lm1FStat<-summary(lm1)$fstatistic
-  pepDFRes$T0Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
+  pepDFRes$Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
   
-  # Means:
-  lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
-  pepDFRes$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
-  pepDFRes$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
-  pepDFRes$T0_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
+  # Time-point Means:
+  lm1Emmeans<-as.data.frame(emmeans(lm1,~Group*timept))
+  pepDFRes$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$timept=="T0" & lm1Emmeans$Group=="sCAD"]
+  pepDFRes$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$timept=="T0" & lm1Emmeans$Group=="Type 1"]
+  pepDFRes$T0_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$timept=="T0" & lm1Emmeans$Group=="Type 2"]
+  pepDFRes$TFU_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$timept=="FU" & lm1Emmeans$Group=="sCAD"]
+  pepDFRes$TFU_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$timept=="FU" & lm1Emmeans$Group=="Type 1"]
+  pepDFRes$TFU_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$timept=="FU" & lm1Emmeans$Group=="Type 2"]
   
-  # Pairwise: 
-  lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group),adjust="none"))
+  # Pairwise T0: 
+  lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group*timept),adjust="none"))
   pepDFRes$T0_Type1_sCAD[i]<-
-    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 1"])
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD,T0 - Type 1,T0"])
   pepDFRes$T0_Type2_sCAD[i]<-
-    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 2"])
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD,T0 - Type 2,T0"])
   pepDFRes$T0_Type1_Type2[i]<-
-    (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1 - Type 2"])
+    (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1,T0 - Type 2,T0"])
   
-  # Pairwise p-value
+  # Pairwise T0 p-value
   pepDFRes$T0_Type1_sCAD_p[i]<-
-    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 1"])
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD,T0 - Type 1,T0"])
   pepDFRes$T0_Type2_sCAD_p[i]<-
-    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 2"])
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD,T0 - Type 2,T0"])
   pepDFRes$T0_Type1_Type2_p[i]<-
-    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1 - Type 2"])
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1,T0 - Type 2,T0"])
+  
+  # Diffs:
+  pepDFRes$D_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD,FU - sCAD,T0"])
+  pepDFRes$D_Type1[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="Type 1,FU - Type 1,T0"])
+  pepDFRes$D_Type2[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="Type 2,FU - Type 2,T0"])
+  
+  # Diffs p-values:
+  pepDFRes$D_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD,FU - sCAD,T0"])
+  pepDFRes$D_Type1_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1,FU - Type 1,T0"])
+  pepDFRes$D_Type2_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 2,FU - Type 2,T0"])
+  
+  # Diff in diffs:
+  k_D_Type1_sCAD<-matrix(c(0,0,0,0,1,0),nrow=1,byrow=TRUE)
+  glht_D_Type1_sCAD<-glht(lm1,k_D_Type1_sCAD)
+  pepDFRes$D_Type1_sCAD[i]<-coef(glht_D_Type1_sCAD)
+  pepDFRes$D_Type1_sCAD_p[i]<-summary(glht_D_Type1_sCAD,test=adjusted(type="none"))$test$pvalues
+  
+  k_D_Type2_sCAD<-matrix(c(0,0,0,0,0,1),nrow=1,byrow=TRUE)
+  glht_D_Type2_sCAD<-glht(lm1,k_D_Type2_sCAD)
+  pepDFRes$D_Type2_sCAD[i]<-coef(glht_D_Type2_sCAD)
+  pepDFRes$D_Type2_sCAD_p[i]<-summary(glht_D_Type2_sCAD,test=adjusted(type="none"))$test$pvalues
+  
+  k_D_Type1_Type2<-matrix(c(0,0,0,0,1,-1),nrow=1,byrow=TRUE)
+  glht_D_Type1_Type2<-glht(lm1,k_D_Type1_Type2)
+  pepDFRes$D_Type1_Type2[i]<-coef(glht_D_Type1_Type2)
+  pepDFRes$D_Type1_Type2_p[i]<-summary(glht_D_Type1_Type2,test=adjusted(type="none"))$test$pvalues
 }
 
 pepDFRes<-pepDFRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
