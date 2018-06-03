@@ -305,7 +305,7 @@ pepDF$timept<-str_split(pepDF$rep,"_",simplify=TRUE)[,3]
 pepDF<-pepDF %>% left_join(groups)
 
 unqPep<-unique(pepDF$Name)
-pepDFRes<-data.frame(unqPep=unqPep,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
+pepDFT0Res<-data.frame(unqPep=unqPep,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
                      T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,T0_Type1_Type2=NA, 
                      T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,T0_Type1_Type2_p=NA)
 for(i in 1:length(unqPep)){
@@ -315,37 +315,90 @@ for(i in 1:length(unqPep)){
   
   # Overall T0 ANOVA:
   lm1FStat<-summary(lm1)$fstatistic
-  pepDFRes$T0_Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
+  pepDFT0Res$T0_Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
   
   # Time-point Means:
   lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
-  pepDFRes$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
-  pepDFRes$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
-  pepDFRes$T0_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
+  pepDFT0Res$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
+  pepDFT0Res$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
+  pepDFT0Res$T0_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
 
   # Pairwise T0: 
   lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group),adjust="none"))
-  pepDFRes$T0_Type1_sCAD[i]<-
+  pepDFT0Res$T0_Type1_sCAD[i]<-
     (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 1"])
-  pepDFRes$T0_Type2_sCAD[i]<-
+  pepDFT0Res$T0_Type2_sCAD[i]<-
     (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 2"])
-  pepDFRes$T0_Type1_Type2[i]<-
+  pepDFT0Res$T0_Type1_Type2[i]<-
     (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1 - Type 2"])
   
   # Pairwise T0 p-value
-  pepDFRes$T0_Type1_sCAD_p[i]<-
+  pepDFT0Res$T0_Type1_sCAD_p[i]<-
     (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 1"])
-  pepDFRes$T0_Type2_sCAD_p[i]<-
+  pepDFT0Res$T0_Type2_sCAD_p[i]<-
     (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 2"])
-  pepDFRes$T0_Type1_Type2_p[i]<-
+  pepDFT0Res$T0_Type1_Type2_p[i]<-
     (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1 - Type 2"])
   
   print(i)
 }
-pepDFRes<-pepDFRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
+pepDFT0Res<-pepDFT0Res %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
 
 ########### Peptide Difference analysis ###########
+pepDFw<-pepDF %>% dplyr::select(-rep) %>% tidyr::spread(key="timept",value="Intensity")
+pepDFw$d<-pepDFw$T0-pepDFw$FU
 
+pepDFDRes<-data.frame(unqPep=unqPep,D_sCAD=NA,D_Type1=NA,D_Type2=NA,
+                       D_Anova=NA,D_Type1_sCAD=NA,D_Type2_sCAD=NA,D_Type1_Type2=NA, 
+                       D_Type1_sCAD_p=NA,D_Type2_sCAD_p=NA,D_Type1_Type2_p=NA)
+for(i in 1:length(unqPep)){
+  # Linear Model
+  lm1<-lm(d~Group,data=pepDFw %>% 
+            filter(Name==unqPep[i] & Group!="Indeterminate"))
+  
+  # Overall T0 ANOVA:
+  lm1FStat<-summary(lm1)$fstatistic
+  pepDFDRes$D_Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
+  
+  # Time-point Means:
+  lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
+  pepDFDRes$D_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
+  pepDFDRes$D_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
+  pepDFDRes$D_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
+  
+  # Pairwise D: 
+  lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group),adjust="none"))
+  pepDFDRes$D_Type1_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 1"])
+  pepDFDRes$D_Type2_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 2"])
+  pepDFDRes$D_Type1_Type2[i]<-
+    (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  # Pairwise T0 p-value
+  pepDFDRes$D_Type1_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 1"])
+  pepDFDRes$D_Type2_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 2"])
+  pepDFDRes$D_Type1_Type2_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  print(i)
+}
+pepDFDRes<-pepDFDRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
+
+########### Protein Aggregation ###########
+protList<-paste(pepAnno2$proteins,collapse=";")
+protList<-unique(unlist(str_split(protList,";")))
+Prot<-data.frame(prot=protList,lvl=NA,nPep=NA,peps=NA)
+for(prot in Prot$prot){
+  peps<-pepAnno2$pepSeq[grepl(prot,pepAnno2$proteins,fixed=TRUE) & pepAnno2$protN==1 &
+             pepAnno2$goodQuant>.8]
+  if(length(peps)>0){
+    Prot$peps[Prot$prot==prot]<-paste(peps,collapse=";")
+    Prot$nPep[Prot$prot==prot]<-length(peps)
+  }
+}
 
 ########### How peptides were aggregated into proteins ###########
 pep2prot<-peptides00 %>% dplyr::select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
