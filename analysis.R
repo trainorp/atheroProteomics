@@ -32,7 +32,7 @@ pheno<-pheno %>% left_join(groups)
 
 # Wide data:
 makeWideFun<-function(data){
-  peptidesL<-data %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
+  peptidesL<-data %>% dplyr::select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
     gather(key="rep",value="Intensity",-Name)
   peptidesL<-pheno %>% left_join(groups) %>% left_join(peptidesL,by=c("newName"="rep"))
   peptidesL$GroupTime<-paste(peptidesL$Group,peptidesL$timept,sep=".")
@@ -41,7 +41,7 @@ makeWideFun<-function(data){
                                        "Indeterminate.FU","Indeterminate.T0"))
   
   peptidesL<-peptidesL %>% arrange(GroupTime,ptid,replicate)
-  temp1<-peptidesL %>% select(GroupTime,ptid,replicate) %>% unique()
+  temp1<-peptidesL %>% dplyr::select(GroupTime,ptid,replicate) %>% unique()
   temp1$uID<-as.factor(1L:nrow(temp1))
   peptidesL<-temp1 %>% left_join(peptidesL)
   return(peptidesL)
@@ -54,7 +54,7 @@ pepSeqsStr<-paste(pepSeqs,collapse=",")
 # write.table(pepSeqsStr,file="pepSeqsStr.txt",quote=FALSE,row.names=FALSE)
 
 # Export other peptide annotation:
-pepAnno<-peptides %>% select(Name,Quality.Score,ParentProtein.FullName,Use.For.Quant,
+pepAnno<-peptides %>% dplyr::select(Name,Quality.Score,ParentProtein.FullName,Use.For.Quant,
                              Percent.Files.With.Good.Quant)
 # save(pepAnno,file="pepAnno.RData")
 
@@ -190,7 +190,7 @@ bGalFun<-function(data,method){
                           Percent.Files.With.Good.Quant>.99)
   set.seed(3)
   bGalShort<-sample(bGal$Name,8)
-  bGalL<-bGal %>% select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
+  bGalL<-bGal %>% dplyr::select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
     gather(key="rep",value="Intensity",-Name)
   bGalLNames<-bGalL %>% select(Name) %>% unique()
   bGalLNames$id<-as.factor(1:nrow(bGalLNames))
@@ -375,7 +375,7 @@ for(i in 1:length(unqPep)){
 pepDFRes<-pepDFRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
 
 ########### How peptides were aggregated into proteins ###########
-pep2prot<-peptides00 %>% select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
+pep2prot<-peptides00 %>% dplyr::select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
   filter(Use.For.Quant=="Yes") %>% 
   group_by(Parent.Protein) %>% summarize(sum(rep_1),sum(rep_2))
 
