@@ -275,7 +275,7 @@ bGalProtCVs<-
                 cvFun1(myEColiIntensPep2),cvFun1(myEColiIntensPep3),
                 cvFun1(myEColiIntensPep4),cvFun1(myEColiIntensPep5),
                 cvFun1(myEColiIntensPep6)))
-write.csv(bGalProtCVs,file="bGalProtCVs.csv",row.names=FALSE)
+# write.csv(bGalProtCVs,file="bGalProtCVs.csv",row.names=FALSE)
 
 ########### Combine injections ###########
 combFun<-function(Names,data){
