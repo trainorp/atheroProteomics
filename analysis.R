@@ -4,6 +4,7 @@ library(tidyverse)
 library(gridExtra)
 library(emmeans)
 library(multcomp)
+library(corrplot)
 
 setwd("~/gdrive/AthroProteomics/data")
 peptides<-read.csv('peptide_table_20180514.csv')
@@ -243,6 +244,15 @@ peptides5[,grepl("rep_",names(peptides5))]<-
 peptides6[,grepl("rep_",names(peptides6))]<-
   2**peptides6[,grepl("rep_",names(peptides6))]
 
+########### Rownames ###########
+rownames(peptides00)<-peptides00$Name
+rownames(peptides1)<-peptides1$Name
+rownames(peptides2)<-peptides2$Name
+rownames(peptides3)<-peptides3$Name
+rownames(peptides4)<-peptides4$Name
+rownames(peptides5)<-peptides5$Name
+rownames(peptides6)<-peptides6$Name
+
 ########### My beta-gal protein normalization ###########
 load("~/gdrive/AthroProteomics/data/pepAnno2.RData")
 pinEcoli<-pepAnno2 %>% filter(grepl("P00722",proteins) & goodQuant>.99 
@@ -276,6 +286,23 @@ bGalProtCVs<-
                 cvFun1(myEColiIntensPep4),cvFun1(myEColiIntensPep5),
                 cvFun1(myEColiIntensPep6)))
 # write.csv(bGalProtCVs,file="bGalProtCVs.csv",row.names=FALSE)
+
+########### Beta gal peptide correlations ###########
+myEColiIntensPep1<-rbind(myEColiIntensPep1,apply(myEColiIntensPep1,2,sum))
+rownames(myEColiIntensPep1)[nrow(myEColiIntensPep1)]<-"Total"
+cor1<-cor(t(myEColiIntensPep1))
+
+png("plots/cor1.png",height=6,width=6,units="in",res=300)
+corrplot(cor1,type="upper",tl.cex=.4,is.corr=FALSE,cl.lim=c(-.4,1))
+dev.off()
+
+myEColiIntensPep5<-rbind(myEColiIntensPep5,apply(myEColiIntensPep5,2,sum))
+rownames(myEColiIntensPep5)[nrow(myEColiIntensPep5)]<-"Total"
+cor5<-cor(t(myEColiIntensPep5))
+
+png("plots/cor5.png",height=6,width=6,units="in",res=300)
+corrplot(cor5,type="upper",tl.cex=.4,is.corr=FALSE,cl.lim=c(-.4,1))
+dev.off()
 
 ########### Combine injections ###########
 combFun<-function(Names,data){
