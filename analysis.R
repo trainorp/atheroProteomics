@@ -193,7 +193,7 @@ bGalFun<-function(data,method){
   bGalShort<-sample(bGal$Name,8)
   bGalL<-bGal %>% dplyr::select(-Quality.Score,-(Parent.Protein:Percent.Files.With.Good.Quant)) %>%
     gather(key="rep",value="Intensity",-Name)
-  bGalLNames<-bGalL %>% select(Name) %>% unique()
+  bGalLNames<-bGalL %>% dplyr::select(Name) %>% unique()
   bGalLNames$id<-as.factor(1:nrow(bGalLNames))
   bGalL<-bGalLNames %>% left_join(bGalL)
   
@@ -344,7 +344,7 @@ for(i in 1:length(unqPep)){
   lm1FStat<-summary(lm1)$fstatistic
   pepDFT0Res$T0_Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
   
-  # Time-point Means:
+  # T0 Means:
   lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
   pepDFT0Res$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
   pepDFT0Res$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
@@ -370,9 +370,12 @@ for(i in 1:length(unqPep)){
   print(i)
 }
 pepDFT0Res<-pepDFT0Res %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
+pepDFT0ResGood<-pepDFT0Res %>% 
+  filter(goodQuant>.8 & T0_Type1_sCAD_p<.1 & T0_Type1_Type2_p<.1)
 
 ########### Peptide Difference analysis ###########
-pepDFw<-pepDF %>% dplyr::select(-rep) %>% tidyr::spread(key="timept",value="Intensity")
+pepDFw<-pepDF %>% dplyr::select(-rep) %>% 
+  tidyr::spread(key="timept",value="Intensity")
 pepDFw$d<-pepDFw$T0-pepDFw$FU
 
 pepDFDRes<-data.frame(unqPep=unqPep,D_sCAD=NA,D_Type1=NA,D_Type2=NA,
@@ -413,6 +416,9 @@ for(i in 1:length(unqPep)){
   print(i)
 }
 pepDFDRes<-pepDFDRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
+pepDFDResGood<-pepDFDRes %>% 
+  filter(goodQuant>.8 & D_Type1_sCAD_p<.1 & D_Type1_Type2_p<.1)
+save.image(file="working_20180804.RData")
 
 ########### Protein Aggregation ###########
 protList<-paste(pepAnno2$proteins,collapse=";")
