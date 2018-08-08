@@ -1,10 +1,13 @@
 ########### Prereqs ###########
+# Begin always run:
 options(stringsAsFactors=FALSE,scipen=600)
 library(tidyverse)
 library(gridExtra)
 library(emmeans)
 library(multcomp)
 library(corrplot)
+
+# End always run
 
 setwd("~/gdrive/AthroProteomics/data")
 peptides<-read.csv('peptide_table_20180514.csv')
@@ -78,7 +81,7 @@ m0<-log2(m0)
 peptides[,grepl("rep",names(peptides))]<-m0
 
 peptidesL<-makeWideFun(peptides)
-# png(file="plots/peptideNoNorm.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideNoNorm.png",height=5,width=10,units="in",res=300)
 p0<-ggplot(data=peptidesL,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
@@ -102,21 +105,21 @@ peptides1b[,grepl("rep",names(peptides1b))]<-log2(m1b)
 
 peptidesL1<-makeWideFun(peptides1)
 peptidesL1b<-makeWideFun(peptides1b)
-# png(file="plots/peptideColNorm.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideColNorm.png",height=5,width=10,units="in",res=300)
 p1<-ggplot(data=peptidesL1,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
 show(p1)
 # dev.off()
 
-# png(file="plots/peptideColMedNorm.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideColMedNorm.png",height=5,width=10,units="in",res=300)
 p1b<-ggplot(data=peptidesL1b,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
 show(p1b)
 # dev.off()
 
-# png(file="plots/peptideNoneVColNorm.png",height=10,width=10,units="in",res=300)
+# png(file="Plots/peptideNoneVColNorm.png",height=10,width=10,units="in",res=300)
 grid.arrange(p0,p1,nrow=2)
 # dev.off()
 
@@ -125,7 +128,7 @@ m2<-preprocessCore::normalize.quantiles(m0)
 peptides2<-peptides
 peptides2[,grepl("rep",names(peptides2))]<-m2
 peptidesL2<-makeWideFun(peptides2)
-# png(file="plots/peptideQuantNorm.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideQuantNorm.png",height=5,width=10,units="in",res=300)
 p2<-ggplot(data=peptidesL2,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
@@ -137,7 +140,7 @@ m3<-limma::normalizeCyclicLoess(m0)
 peptides3<-peptides
 peptides3[,grepl("rep",names(peptides3))]<-m3
 peptidesL3<-makeWideFun(peptides3)
-# png(file="plots/peptideFastCyclicLoess.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideFastCyclicLoess.png",height=5,width=10,units="in",res=300)
 p3<-ggplot(data=peptidesL3,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
@@ -151,7 +154,7 @@ m4<-limma::normalizeCyclicLoess(m0,weights = bGalWeights)
 peptides4<-peptides
 peptides4[,grepl("rep",names(peptides4))]<-m4
 peptidesL4<-makeWideFun(peptides4)
-# png(file="plots/peptideFastCyclicLoessbGalOnly.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideFastCyclicLoessbGalOnly.png",height=5,width=10,units="in",res=300)
 p4<-ggplot(data=peptidesL4,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
@@ -165,7 +168,7 @@ m5<-limma::normalizeCyclicLoess(m0,weights = bGalWeights2)
 peptides5<-peptides
 peptides5[,grepl("rep",names(peptides5))]<-m5
 peptidesL5<-makeWideFun(peptides5)
-# png(file="plots/peptideFastCyclicLoessbGalHeavy.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideFastCyclicLoessbGalHeavy.png",height=5,width=10,units="in",res=300)
 p5<-ggplot(data=peptidesL5,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
@@ -177,7 +180,7 @@ m6<-limma::normalizeMedianAbsValues(m0)
 peptides6<-peptides
 peptides6[,grepl("rep",names(peptides6))]<-m6
 peptidesL6<-makeWideFun(peptides6)
-# png(file="plots/peptideMAD.png",height=5,width=10,units="in",res=300)
+# png(file="Plots/peptideMAD.png",height=5,width=10,units="in",res=300)
 p6<-ggplot(data=peptidesL6,aes(x=uID,group=newName,color=GroupTime,y=Intensity))+
   geom_boxplot()+theme_bw()+xlab("")+ylab("Intensity (log scale)")+
   theme(axis.text.x=element_blank())
@@ -202,13 +205,13 @@ bGalFun<-function(data,method){
   names(cv)[names(cv)=="cv"]<-paste0(method,"CV")
   
   # Plots:
-  fName<-paste0("plots/bGalPeptides_",method,"_Full.png")
+  fName<-paste0("Plots/bGalPeptides_",method,"_Full.png")
   # png(filename=fName,height=5,width=8,units="in",res=300)
   bGalp<-ggplot(bGalL,aes(x=rep,y=Intensity,group=Name,color=id))+
     geom_line()+ylim(23,32)+theme_bw()+xlab("Replicate")+ylab("Intensity (log scale)")
   print(bGalp)
   # dev.off()
-  fName2<-paste0("plots/bGalPeptides_",method,"_Samp.png")
+  fName2<-paste0("Plots/bGalPeptides_",method,"_Samp.png")
   # png(filename=fName2,height=5,width=8,units="in",res=300)
   bGalp2<-ggplot(bGalL %>% filter(Name %in% bGalShort),
                     aes(x=rep,y=Intensity,group=Name,color=id))+
@@ -292,7 +295,7 @@ myEColiIntensPep1<-rbind(myEColiIntensPep1,apply(myEColiIntensPep1,2,sum))
 rownames(myEColiIntensPep1)[nrow(myEColiIntensPep1)]<-"Total"
 cor1<-cor(t(myEColiIntensPep1))
 
-png("plots/cor1.png",height=6,width=6,units="in",res=300)
+png("Plots/cor1.png",height=6,width=6,units="in",res=300)
 corrplot(cor1,type="upper",tl.cex=.4,is.corr=FALSE,cl.lim=c(-.4,1))
 dev.off()
 
@@ -300,7 +303,7 @@ myEColiIntensPep5<-rbind(myEColiIntensPep5,apply(myEColiIntensPep5,2,sum))
 rownames(myEColiIntensPep5)[nrow(myEColiIntensPep5)]<-"Total"
 cor5<-cor(t(myEColiIntensPep5))
 
-png("plots/cor5.png",height=6,width=6,units="in",res=300)
+png("Plots/cor5.png",height=6,width=6,units="in",res=300)
 corrplot(cor5,type="upper",tl.cex=.4,is.corr=FALSE,cl.lim=c(-.4,1))
 dev.off()
 
@@ -419,6 +422,18 @@ pepDFDRes<-pepDFDRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
 pepDFDResGood<-pepDFDRes %>% 
   filter(goodQuant>.8 & D_Type1_sCAD_p<.1 & D_Type1_Type2_p<.1)
 save.image(file="working_20180804.RData")
+
+# Export peptide results:
+write.csv(pepDFT0Res,"pepDFT0Res.csv")
+write.csv(pepDFDRes,"pepDFDRes.csv")
+
+########### Peptide plots ###########
+setwd("~/gdrive/AthroProteomics")
+load(file="working_20180804.RData")
+
+temp1<-pepDF %>% filter(Name=="TYHVGEQWQK")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()
 
 ########### Protein Aggregation ###########
 protList<-paste(pepAnno2$proteins,collapse=";")
