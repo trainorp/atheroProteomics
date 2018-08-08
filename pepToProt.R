@@ -21,6 +21,9 @@ pepToProt<-pepToProt[!duplicated(pepToProt),]
 load("pepAnno.RData")
 nrow(pepAnno) #3,544
 
+########### Peptide selection ###########
+digest<-read.table("uniprot_sprot_wvar_digested_Mass400to6000.txt",header=TRUE)
+
 ########### Collapse proteins ###########
 pepAnno$pepSeq<-gsub("(\\[.*?\\])","",pepAnno$Name)
 pepAnno<-pepAnno %>% left_join(pepToProt)

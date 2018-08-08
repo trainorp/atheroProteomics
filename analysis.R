@@ -431,9 +431,37 @@ write.csv(pepDFDRes,"pepDFDRes.csv")
 setwd("~/gdrive/AthroProteomics")
 load(file="working_20180804.RData")
 
-temp1<-pepDF %>% filter(Name=="TYHVGEQWQK")
+temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()
+  geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("TYHVGEQWQK (Fibronectin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+temp1<-pepDF %>% filter(Name=="LSSPAVITDK" & Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+ggtitle("LSSPAVITDK (Plasminogen)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("LSSPAVITDK (Plasminogen)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+temp1<-pepDF %>% filter(Name=="KPVAFSDYIHPVC[Carboxymethyl]LPDR" & 
+                          Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+
+  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ########### Protein Aggregation ###########
 protList<-paste(pepAnno2$proteins,collapse=";")
