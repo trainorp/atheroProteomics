@@ -33,6 +33,9 @@ groups$Group<-"sCAD"
 groups$Group[!is.na(groups$MIGroup)]<-groups$MIGroup[!is.na(groups$MIGroup)]
 
 pheno<-pheno %>% left_join(groups)
+# Remove 2010_T0 because there are 4 replicates!
+peptides<-peptides[,!(colnames(peptides) %in% pheno$newName[pheno$uSamp=="2010_T0"])]
+pheno<-pheno %>% filter(uSamp != "2010_T0")
 
 # Wide data:
 makeWideFun<-function(data){
@@ -328,6 +331,17 @@ combFun<-function(Names,data){
 }
 pep1<-combFun(Names=peptides1$Name,data=peptides1)
 
+# Major cleanup:
+rm(bGalCVs,bGalProtCVs,cor1,cor5,m0,m00,m1,m1b,m2,m3,m4,m5,m6,
+   myEColi,myEColiIntensPep00,myEColiIntensPep1,myEColiIntensPep2,
+   myEColiIntensPep3,myEColiIntensPep4,myEColiIntensPep5,myEColiIntensPep6,
+   names2,p0,p1,p1b,p2,p3,p4,p5,p6,peptides,peptides00,peptides1b,
+   peptides2,peptides3,peptides4,peptides5,peptides6,peptidesL,peptidesL1b,
+   peptidesL2,peptidesL3,peptidesL4,peptidesL5,peptidesL6,proteins,
+   reg1DF,bGalWeights,bGalWeights2,cFac,cFac2,cMed,cSums,i,mins,names1,
+   pepSeqs,pepSeqsStr,reg1,reg2,bGalFun,combFun,cvFun1,makeWideFun,
+   pinEcoli)
+
 ########### Peptide difference at baseline ###########
 pepDF<-pep1 %>% gather(key="rep",value="Intensity",-Name)
 pepDF$ptid<-str_split(pepDF$rep,"_",simplify=TRUE)[,2]
@@ -421,7 +435,7 @@ for(i in 1:length(unqPep)){
 pepDFDRes<-pepDFDRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
 pepDFDResGood<-pepDFDRes %>% 
   filter(goodQuant>.8 & D_Type1_sCAD_p<.1 & D_Type1_Type2_p<.1)
-save.image(file="working_20180804.RData")
+save.image(file="working_20180815.RData")
 
 # Export peptide results:
 write.csv(pepDFT0Res,"pepDFT0Res.csv")
@@ -429,7 +443,7 @@ write.csv(pepDFDRes,"pepDFDRes.csv")
 
 ########### Peptide plots ###########
 setwd("~/gdrive/AthroProteomics")
-load(file="working_20180804.RData")
+load(file="working_20180815.RData")
 
 temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
@@ -469,12 +483,14 @@ protList<-unique(unlist(str_split(protList,";")))
 Prot<-data.frame(prot=protList,lvl=NA,nPep=NA,peps=NA)
 for(prot in Prot$prot){
   peps<-pepAnno2$pepSeq[grepl(prot,pepAnno2$proteins,fixed=TRUE) & pepAnno2$protN==1 &
-             pepAnno2$goodQuant>.8]
+             pepAnno2$goodQuant>.3]
   if(length(peps)>0){
     Prot$peps[Prot$prot==prot]<-paste(peps,collapse=";")
     Prot$nPep[Prot$prot==prot]<-length(peps)
   }
 }
+ProtOut<-Prot[is.na(Prot$nPep),]
+Prot<-Prot[!is.na(Prot$nPep),]
 
 # Calculate mean to make the protein abundances
 pepsInProtList<-list()
@@ -493,8 +509,51 @@ prots<-do.call("rbind",pepsInProtList)
 
 # Add sample annotation:
 prots$rep<-gsub("rep_","",prots$rep)
-prots<-prots %>% left_join(pheno %>% dplyr::select(uSamp,Group,ptid,timept),
+prots<-prots %>% left_join(pheno %>% dplyr::select(uSamp,Group,ptid,timept) 
+                           %>% unique(),
                            by=c("rep"="uSamp"))
+unqProts<-unique(prots$prot)
+
+########### Protein level analysis ###########
+protDFT0Res<-data.frame(prot=unqProts,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
+                       T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,T0_Type1_Type2=NA, 
+                       T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,T0_Type1_Type2_p=NA)
+for(i in 1:nrow(protDFT0Res)){
+  # Linear Model
+  lm1<-lm(value~Group,data=prots %>% 
+            filter(prot==protDFT0Res$prot[i] & Group!="Indeterminate" & timept=="T0"))
+  
+  # Overall T0 ANOVA:
+  lm1FStat<-summary(lm1)$fstatistic
+  protDFT0Res$T0_Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
+  
+  # T0 Means:
+  lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
+  protDFT0Res$T0_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
+  protDFT0Res$T0_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
+  protDFT0Res$T0_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
+  
+  # Pairwise T0: 
+  lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group),adjust="none"))
+  protDFT0Res$T0_Type1_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 1"])
+  protDFT0Res$T0_Type2_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 2"])
+  protDFT0Res$T0_Type1_Type2[i]<-
+    (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  # Pairwise T0 p-value
+  protDFT0Res$T0_Type1_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 1"])
+  protDFT0Res$T0_Type2_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 2"])
+  protDFT0Res$T0_Type1_Type2_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  print(i)
+}
+protDFT0ResGood<-protDFT0Res %>% 
+  filter(T0_Type1_sCAD_p<.1 & T0_Type1_Type2_p<.1)
 
 ########### How peptides were aggregated into proteins ###########
 pep2prot<-peptides00 %>% dplyr::select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
