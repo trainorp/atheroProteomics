@@ -484,11 +484,17 @@ Prot<-data.frame(prot=protList,lvl=NA,nPep=NA,peps=NA)
 for(prot in Prot$prot){
   peps<-pepAnno2$pepSeq[grepl(prot,pepAnno2$proteins,fixed=TRUE) & pepAnno2$protN==1 &
              pepAnno2$goodQuant>.3]
+  pepsAll<-pepAnno2$pepSeq[grepl(prot,pepAnno2$proteins,fixed=TRUE)]
   if(length(peps)>0){
     Prot$peps[Prot$prot==prot]<-paste(peps,collapse=";")
     Prot$nPep[Prot$prot==prot]<-length(peps)
   }
+  if(length(pepsAll)>0){
+    Prot$pepsAll[Prot$prot==prot]<-paste(pepsAll,collapse=";")
+    Prot$nPepAll[Prot$prot==prot]<-length(pepsAll)
+  }
 }
+Prot0<-Prot
 ProtOut<-Prot[is.na(Prot$nPep),]
 Prot<-Prot[!is.na(Prot$nPep),]
 
@@ -513,6 +519,12 @@ prots<-prots %>% left_join(pheno %>% dplyr::select(uSamp,Group,ptid,timept)
                            %>% unique(),
                            by=c("rep"="uSamp"))
 unqProts<-unique(prots$prot)
+
+########### Join prot sum to peptide data ###########
+pepDFT0Res$OtherPepGood<-pepDFT0Res$OtherPepTotal<-NA
+for(i in 1:nrow(pepDFT0Res)){
+  pepDFT0Res$proteins[i] # LOH
+}
 
 ########### Protein level analysis ###########
 protDFT0Res<-data.frame(prot=unqProts,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
