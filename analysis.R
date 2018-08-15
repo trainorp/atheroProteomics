@@ -476,6 +476,17 @@ for(prot in Prot$prot){
   }
 }
 
+i<-1
+pepsInProtList<-list()
+pepsInProt<-unlist(str_split(Prot$peps[i],";"))
+pepsInProtDF<-pep1[pep1$Name %in% pepsInProt,]
+pepsInProtDF$Name<-NULL
+pepsInProtDF<-t(t(apply(pepsInProtDF,2,mean)))
+pepsInProtDF<-as.data.frame(pepsInProtDF)
+names(pepsInProtDF)[1]<-"value"
+pepsInProtDF$prot<-Prot$prot[i]
+
+
 ########### How peptides were aggregated into proteins ###########
 pep2prot<-peptides00 %>% dplyr::select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
   filter(Use.For.Quant=="Yes") %>% 
