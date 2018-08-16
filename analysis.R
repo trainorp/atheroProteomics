@@ -523,7 +523,13 @@ unqProts<-unique(prots$prot)
 ########### Join prot sum to peptide data ###########
 pepDFT0Res$OtherPepGood<-pepDFT0Res$OtherPepTotal<-NA
 for(i in 1:nrow(pepDFT0Res)){
-  pepDFT0Res$proteins[i] # LOH
+  tempProts<-pepDFT0Res$proteins[i]
+  tempProts<-unlist(str_split(tempProts,";"))
+  if(length(tempProts)>1){
+    tempProts<-str_split(str_split(tempProts,"\\|",simplify=TRUE)[,2],
+                         "-",simplify=TRUE)[,1]
+  }
+  pepDFT0Res[grepl(paste(tempProts,collapse="|"),pepDFT0Res$proteins),]
 }
 
 ########### Protein level analysis ###########
