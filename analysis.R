@@ -525,11 +525,11 @@ pepDFT0Res$OtherPepGood<-pepDFT0Res$OtherPepTotal<-NA
 for(i in 1:nrow(pepDFT0Res)){
   tempProts<-pepDFT0Res$proteins[i]
   tempProts<-unlist(str_split(tempProts,";"))
-  if(length(tempProts)>1){
-    tempProts<-str_split(str_split(tempProts,"\\|",simplify=TRUE)[,2],
-                         "-",simplify=TRUE)[,1]
-  }
-  pepDFT0Res[grepl(paste(tempProts,collapse="|"),pepDFT0Res$proteins),]
+  tempProts<-str_split(str_split(tempProts,"\\|",simplify=TRUE)[,2],
+                       "-",simplify=TRUE)[,1]
+  allPeps<-unique(pepDFT0Res[grepl(paste(tempProts,collapse="|"),
+                          pepDFT0Res$proteins),]$unqPep)
+  pepDFT0Res$OtherPepTotal[i]<-length(allPeps)
 }
 
 ########### Protein level analysis ###########
