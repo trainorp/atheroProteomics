@@ -437,10 +437,6 @@ pepDFDResGood<-pepDFDRes %>%
   filter(goodQuant>.8 & D_Type1_sCAD_p<.1 & D_Type1_Type2_p<.1)
 save.image(file="working_20180815.RData")
 
-# Export peptide results:
-write.csv(pepDFT0Res,"pepDFT0Res.csv")
-write.csv(pepDFDRes,"pepDFDRes.csv")
-
 ########### Peptide plots ###########
 setwd("~/gdrive/AthroProteomics")
 load(file="working_20180815.RData")
@@ -520,17 +516,36 @@ prots<-prots %>% left_join(pheno %>% dplyr::select(uSamp,Group,ptid,timept)
                            by=c("rep"="uSamp"))
 unqProts<-unique(prots$prot)
 
-########### Join prot sum to peptide data ###########
-pepDFT0Res$OtherPepGood<-pepDFT0Res$OtherPepTotal<-NA
+########### Join prot data to peptide data ###########
+# Baseline abundances:
+pepDFT0Res$OtherPepGood<-pepDFT0Res$OtherPepTotal<-pepDFT0Res$otherCor<-pepDFT0Res$otherGoodCor<-NA
 for(i in 1:nrow(pepDFT0Res)){
   tempProts<-pepDFT0Res$proteins[i]
   tempProts<-unlist(str_split(tempProts,";"))
   tempProts<-str_split(str_split(tempProts,"\\|",simplify=TRUE)[,2],
                        "-",simplify=TRUE)[,1]
-  allPeps<-unique(pepDFT0Res[grepl(paste(tempProts,collapse="|"),
-                          pepDFT0Res$proteins),]$unqPep)
+  allPepsDF<-pepDFT0Res[grepl(paste(tempProts,collapse="|"),
+                              pepDFT0Res$proteins),]
+  allPeps<-unique(allPepsDF$unqPep)
+  allPepsGood<-unique(allPepsDF[allPepsDF$goodQuant>.3,]$unqPep)
   pepDFT0Res$OtherPepTotal[i]<-length(allPeps)
+  pepDFT0Res$OtherPepGood[i]<-length(allPepsGood)
+  
+  # Correlation analysis:
+  mat1<-as.matrix(pep1[pep1$Name %in% allPeps,names(pep1)!="Name"])
+  mat2<-as.matrix(pep1[pep1$Name %in% allPepsGood,names(pep1)!="Name"])
+  corMat1<-cor(t(mat1))
+  corMat2<-cor(t(mat2))
+  pepDFT0Res$otherCor[i]<-mean(corMat1[rownames(corMat1)!=pepDFT0Res$unqPep[i],
+          colnames(corMat1)==pepDFT0Res$unqPep[i]])
+  pepDFT0Res$otherGoodCor[i]<-mean(corMat2[rownames(corMat2)!=pepDFT0Res$unqPep[i],
+                                       colnames(corMat2)==pepDFT0Res$unqPep[i]])
+  print(i)
 }
+
+# Export peptide results:
+write.csv(pepDFT0Res,"pepDFT0Res.csv")
+write.csv(pepDFDRes,"pepDFDRes.csv")
 
 ########### Protein level analysis ###########
 protDFT0Res<-data.frame(prot=unqProts,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
@@ -572,9 +587,4 @@ for(i in 1:nrow(protDFT0Res)){
 }
 protDFT0ResGood<-protDFT0Res %>% 
   filter(T0_Type1_sCAD_p<.1 & T0_Type1_Type2_p<.1)
-
-########### How peptides were aggregated into proteins ###########
-pep2prot<-peptides00 %>% dplyr::select(Name,Parent.Protein,Use.For.Quant,rep_1,rep_2) %>% 
-  filter(Use.For.Quant=="Yes") %>% 
-  group_by(Parent.Protein) %>% summarize(sum(rep_1),sum(rep_2))
 
