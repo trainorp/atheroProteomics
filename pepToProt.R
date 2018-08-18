@@ -21,9 +21,6 @@ pepToProt<-pepToProt[!duplicated(pepToProt),]
 load("pepAnno.RData")
 nrow(pepAnno) #3,544
 
-########### Peptide selection ###########
-digest<-read.table("uniprot_sprot_wvar_digested_Mass400to6000.txt",header=TRUE)
-
 ########### Collapse proteins ###########
 pepAnno$pepSeq<-gsub("(\\[.*?\\])","",pepAnno$Name)
 pepAnno<-pepAnno %>% left_join(pepToProt)
@@ -57,5 +54,18 @@ pepAnno2<-pepAnno2 %>% select(pepSeq=Name,pepSeq2=pepSeq,quality=Quality.Score,
                     pinUseQuant=Use.For.Quant,
                     atlasProt=Prot_acc,SSR,length,type,PA_Acc,mw,e_charge,
                     n_map_core,n_map_all)
+
+########### Digestion & missed cleavage ###########
+# digest<-read.table("uniprot_sprot_wvar_digested_Mass400to6000.txt",header=TRUE)
+# Wrote that part in python
+# New import:
+digest<-read.table("digest2.txt")
+digest<-digest[,-c(3:5)]
+names(digest)<-c("protein","seq","ind")
+digest$miss<-str_split(digest$ind,"\\.",simplify=TRUE)[,2]
+digest<-digest %>% dplyr::select(seq,miss) %>% unique()
+pepAnno2<-pepAnno2 %>% left_join(digest,by=c("pepSeq2"="seq"))
+
+########### Export ###########
 write.csv(pepAnno2,file="pepAnno2.csv",row.names=FALSE)
 save(pepAnno2,file="pepAnno2.RData")
