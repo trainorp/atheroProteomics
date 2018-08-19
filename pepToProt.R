@@ -64,7 +64,11 @@ digest<-digest[,-c(3:5)]
 names(digest)<-c("protein","seq","ind")
 digest$miss<-str_split(digest$ind,"\\.",simplify=TRUE)[,2]
 digest<-digest %>% dplyr::select(seq,miss) %>% unique()
+digest$miss<-as.integer(digest$miss)
 pepAnno2<-pepAnno2 %>% left_join(digest,by=c("pepSeq2"="seq"))
+
+# Length:
+pepAnno2$length<-nchar(pepAnno2$pepSeq2)
 
 ########### Export ###########
 write.csv(pepAnno2,file="pepAnno2.csv",row.names=FALSE)

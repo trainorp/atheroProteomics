@@ -435,6 +435,8 @@ for(i in 1:length(unqPep)){
 pepDFDRes<-pepDFDRes %>% left_join(pepAnno2,by=c("unqPep"="pepSeq"))
 pepDFDResGood<-pepDFDRes %>% 
   filter(goodQuant>.8 & D_Type1_sCAD_p<.1 & D_Type1_Type2_p<.1)
+
+rm(lm1,lm1Emmeans,lm1Pairs,i,lm1FStat,unqPep)
 save.image(file="working_20180815.RData")
 
 ########### Peptide plots ###########
@@ -569,9 +571,15 @@ for(i in 1:nrow(pepDFDRes)){
   print(i)
 }
 
+# Join:
+pepDFRes<-pepDFT0Res %>% full_join(
+  pepDFDRes %>% dplyr::select("unqPep","D_sCAD","D_Type1","D_Type2","D_Anova",
+                              "D_Type1_sCAD","D_Type2_sCAD","D_Type1_Type2",
+                              "D_Type1_sCAD_p","D_Type2_sCAD_p","D_Type1_Type2_p"),
+  by=c("unqPep"))
+
 # Export peptide results:
-write.csv(pepDFT0Res,"pepDFT0Res.csv")
-write.csv(pepDFDRes,"pepDFDRes.csv")
+write.csv(pepDFRes,"pepDFRes.csv")
 
 ########### Protein level analysis ###########
 protDFT0Res<-data.frame(prot=unqProts,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
