@@ -630,11 +630,13 @@ for(i in 1:nrow(protDFDRes)){
 }
 
 # Save
+rm(corMat1,corMat2,lm1,lm1Emmeans,lm1FStat,lm1Pairs,mat1,mat2,allPeps,
+   allPepsGood,i,peps,pepsAll,pepsInProt,prot,protList,tempProts,unqProts)
 save.image(file="working_20180821.RData")
 
 ########### Peptide plots ###########
 setwd("~/gdrive/AthroProteomics")
-load(file="working_20180815.RData")
+load(file="working_20180821.RData")
 
 temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
