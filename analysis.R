@@ -437,43 +437,6 @@ pepDFDResGood<-pepDFDRes %>%
   filter(goodQuant>.8 & D_Type1_sCAD_p<.1 & D_Type1_Type2_p<.1)
 
 rm(lm1,lm1Emmeans,lm1Pairs,i,lm1FStat,unqPep)
-save.image(file="working_20180815.RData")
-
-########### Peptide plots ###########
-setwd("~/gdrive/AthroProteomics")
-load(file="working_20180815.RData")
-
-temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("TYHVGEQWQK (Fibronectin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-temp1<-pepDF %>% filter(Name=="LSSPAVITDK" & Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+ggtitle("LSSPAVITDK (Plasminogen)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("LSSPAVITDK (Plasminogen)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-temp1<-pepDF %>% filter(Name=="KPVAFSDYIHPVC[Carboxymethyl]LPDR" & 
-                          Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+
-  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
-  theme(plot.title = element_text(hjust = 0.5))
 
 ########### Protein Aggregation ###########
 protList<-paste(pepAnno2$proteins,collapse=";")
@@ -582,6 +545,7 @@ pepDFRes<-pepDFT0Res %>% full_join(
 write.csv(pepDFRes,"pepDFRes.csv")
 
 ########### Protein level analysis ###########
+# Baseline
 protDFT0Res<-data.frame(prot=unqProts,T0_sCAD=NA,T0_Type1=NA,T0_Type2=NA,
                        T0_Anova=NA,T0_Type1_sCAD=NA,T0_Type2_sCAD=NA,T0_Type1_Type2=NA, 
                        T0_Type1_sCAD_p=NA,T0_Type2_sCAD_p=NA,T0_Type1_Type2_p=NA)
@@ -621,4 +585,88 @@ for(i in 1:nrow(protDFT0Res)){
 }
 protDFT0ResGood<-protDFT0Res %>% 
   filter(T0_Type1_sCAD_p<.1 & T0_Type1_Type2_p<.1)
+
+############ Protein Change across time ############
+protsW<-prots %>% dplyr::select(-rep) %>% 
+  tidyr::spread(key="timept",value="value")
+protsW$d<-protsW$T0-protsW$FU
+
+protDFDRes<-data.frame(prot=unqProts,D_sCAD=NA,D_Type1=NA,D_Type2=NA,
+                        D_Anova=NA,D_Type1_sCAD=NA,D_Type2_sCAD=NA,D_Type1_Type2=NA, 
+                        D_Type1_sCAD_p=NA,D_Type2_sCAD_p=NA,D_Type1_Type2_p=NA)
+for(i in 1:nrow(protDFDRes)){
+  # Linear Model
+  lm1<-lm(d~Group,data=protsW %>% 
+            filter(prot==protDFDRes$prot[i] & Group!="Indeterminate"))
+  
+  # Overall T0 ANOVA:
+  lm1FStat<-summary(lm1)$fstatistic
+  protDFDRes$D_Anova[i]<-pf(lm1FStat[1],lm1FStat[2],lm1FStat[3],lower.tail=FALSE)
+  
+  # D Means:
+  lm1Emmeans<-as.data.frame(emmeans(lm1,~Group))
+  protDFDRes$D_sCAD[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="sCAD"]
+  protDFDRes$D_Type1[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 1"]
+  protDFDRes$D_Type2[i]<-lm1Emmeans$emmean[lm1Emmeans$Group=="Type 2"]
+  
+  # Pairwise D: 
+  lm1Pairs<-as.data.frame(pairs(emmeans(lm1,~Group),adjust="none"))
+  protDFDRes$D_Type1_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 1"])
+  protDFDRes$D_Type2_sCAD[i]<-
+    (-lm1Pairs$estimate[lm1Pairs$contrast=="sCAD - Type 2"])
+  protDFDRes$D_Type1_Type2[i]<-
+    (lm1Pairs$estimate[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  # Pairwise D p-value
+  protDFDRes$D_Type1_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 1"])
+  protDFDRes$D_Type2_sCAD_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="sCAD - Type 2"])
+  protDFDRes$D_Type1_Type2_p[i]<-
+    (lm1Pairs$p.value[lm1Pairs$contrast=="Type 1 - Type 2"])
+  
+  print(i)
+}
+
+# Save
+rm(corMat1,corMat2,lm1,lm1Emmeans,lm1FStat,lm1Pairs,mat1,mat2,allPeps,
+   allPepsGood,i,peps,pepsAll,pepsInProt,prot,protList,tempProts,unqProts)
+save.image(file="working_20180821.RData")
+
+########### Peptide plots ###########
+setwd("~/gdrive/AthroProteomics")
+load(file="working_20180821.RData")
+
+temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("TYHVGEQWQK (Fibronectin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+temp1<-pepDF %>% filter(Name=="LSSPAVITDK" & Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+ggtitle("LSSPAVITDK (Plasminogen)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("LSSPAVITDK (Plasminogen)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+temp1<-pepDF %>% filter(Name=="KPVAFSDYIHPVC[Carboxymethyl]LPDR" & 
+                          Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+
+  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
