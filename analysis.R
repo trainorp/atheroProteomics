@@ -638,35 +638,51 @@ save.image(file="working_20180821.RData")
 setwd("~/gdrive/AthroProteomics")
 load(file="working_20180821.RData")
 
-temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
+temp1<-pepDF %>% filter(Name=="HITSLEVIK" & Group != "Indeterminate")
+png(file="PF4_Pep1.png",height=3.5,width=6,units="in",res=300)
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("TYHVGEQWQK (Fibronectin)")+
-  theme(plot.title = element_text(hjust = 0.5))
+  ggtitle("HITSLEVIK (Platelet factor 4)")+
+  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
+dev.off()
 
-temp1<-pepDF %>% filter(Name=="LSSPAVITDK" & Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+ggtitle("LSSPAVITDK (Plasminogen)")+
-  theme(plot.title = element_text(hjust = 0.5))
+temp2<-pepDF %>% filter(Name=="AGPHC[Carboxymethyl]PTAQLIATLK" & Group != "Indeterminate")
+png(file="PF4_Pep2.png",height=3.5,width=6,units="in",res=300)
+ggplot(temp2,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
+  ggtitle("AGPHC[Carboxymethyl]PTAQLIATLK (Platelet factor 4)")+
+  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
+dev.off()
 
+temp1<-temp1 %>% dplyr::select(ptid,timept,Group,pep1=Intensity)
+temp2<-temp2 %>% dplyr::select(ptid,timept,Group,pep2=Intensity)
+temp3<-temp1 %>% left_join(temp2,by=c("ptid","timept","Group"))
+temp3$GT<-paste(temp3$Group,temp3$timept,sep=":")
+temp3$GT<-factor(temp3$GT,levels=c("sCAD:FU","sCAD:T0","Type 2:FU","Type 2:T0",
+                                   "Type 1:FU","Type 1:T0"))
+lm1<-lm(pep1~pep2,data=temp3)
+png(file="corPF4.png",height=4,width=5.5,units="in",res=300)
+ggplot(temp3,aes(x=pep1,y=pep2,col=GT)) + geom_point() + 
+  geom_abline(intercept=coef(lm1)[1],slope=coef(lm1)[2]) +
+  xlab("HITSLEVIK") + ylab("AGPHC[Carboxymethyl]PTAQLIATLK") +
+  theme_bw() + ggtitle("Platelet factor 4") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values=c("grey50","grey60","blue","navyblue","lightsalmon","red"))
+dev.off()
+
+temp1<-pepDF %>% filter(Name=="GTHC[Carboxymethyl]NQVEVIATLK" & Group != "Indeterminate")
+png(file="PBP_Pep1.png",height=3.5,width=6,units="in",res=300)
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("LSSPAVITDK (Plasminogen)")+
-  theme(plot.title = element_text(hjust = 0.5))
+  ggtitle("GTHC[Carboxymethyl]NQVEVIATLK (Platelet basic protein)")+
+  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
+dev.off()
 
-temp1<-pepDF %>% filter(Name=="KPVAFSDYIHPVC[Carboxymethyl]LPDR" & 
-                          Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+
-  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
+temp1<-pepDF %>% filter(Name=="NIQSLEVIGK" & Group != "Indeterminate")
+png(file="PBP_Pep2.png",height=3.5,width=6,units="in",res=300)
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
-  theme(plot.title = element_text(hjust = 0.5))
+  ggtitle("NIQSLEVIGK (Platelet basic protein)")+
+  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
+dev.off()
 
