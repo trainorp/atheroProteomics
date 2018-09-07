@@ -6,6 +6,7 @@ library(gridExtra)
 library(emmeans)
 library(multcomp)
 library(corrplot)
+# Ensembl library()
 
 # End always run
 
@@ -298,17 +299,17 @@ myEColiIntensPep1<-rbind(myEColiIntensPep1,apply(myEColiIntensPep1,2,sum))
 rownames(myEColiIntensPep1)[nrow(myEColiIntensPep1)]<-"Total"
 cor1<-cor(t(myEColiIntensPep1))
 
-png("Plots/cor1.png",height=6,width=6,units="in",res=300)
+# png("Plots/cor1.png",height=6,width=6,units="in",res=300)
 corrplot(cor1,type="upper",tl.cex=.4,is.corr=FALSE,cl.lim=c(-.4,1))
-dev.off()
+# dev.off()
 
 myEColiIntensPep5<-rbind(myEColiIntensPep5,apply(myEColiIntensPep5,2,sum))
 rownames(myEColiIntensPep5)[nrow(myEColiIntensPep5)]<-"Total"
 cor5<-cor(t(myEColiIntensPep5))
 
-png("Plots/cor5.png",height=6,width=6,units="in",res=300)
+# png("Plots/cor5.png",height=6,width=6,units="in",res=300)
 corrplot(cor5,type="upper",tl.cex=.4,is.corr=FALSE,cl.lim=c(-.4,1))
-dev.off()
+# dev.off()
 
 ########### Combine injections ###########
 combFun<-function(Names,data){
@@ -541,6 +542,31 @@ pepDFRes<-pepDFT0Res %>% full_join(
                               "D_Type1_sCAD_p","D_Type2_sCAD_p","D_Type1_Type2_p"),
   by=c("unqPep"))
 
+########### Add peptide criteria ###########
+# Criteria 1: Fold change across time in Type 1 (ln-scale) > 1; 
+# Diff between sCAD and Type 1 fold change across time (ln-scale) > 0.75
+pepDFRes$crit1 <- abs(pepDFRes$D_Type1 > 1) & abs(pepDFRes$D_Type1_sCAD > .75)
+
+# Criteria 2: If >1 other peptide from protein or family, correlation > .5?
+pepDFRes$crit2 <- FALSE
+pepDFRes$crit2[(pepDFRes$OtherPepTotal > 1 & pepDFRes$otherCor > .5) | 
+                 (pepDFRes$OtherPepTotal ==1)] <- TRUE
+
+# Criteria 3: No missed cleavages
+pepDFRes$crit3 <- pepDFRes$miss == 1
+
+# Criteria 4: No oxidized Met
+pepDFRes$crit4 <- !grepl("M\\[Oxid\\]",pepDFRes$unqPep)
+
+# Criteria 5: If #1-#4
+pepDFRes$crit5 <- pepDFRes$crit1 & pepDFRes$crit2 & pepDFRes$crit3 & pepDFRes$crit4
+
+# Criteria 6: If different between type 1 MI and sCAD at T0:
+pepDFRes$crit6 <- abs(pepDFRes$T0_Type1_sCAD)>.5
+
+# Criteria 7: Criteria 5 and 6:
+pepDFRes$crit7 <- pepDFRes$crit5 & pepDFRes$crit6
+
 # Export peptide results:
 write.csv(pepDFRes,"pepDFRes.csv")
 
@@ -634,55 +660,43 @@ rm(corMat1,corMat2,lm1,lm1Emmeans,lm1FStat,lm1Pairs,mat1,mat2,allPeps,
    allPepsGood,i,peps,pepsAll,pepsInProt,prot,protList,tempProts,unqProts)
 save.image(file="working_20180821.RData")
 
-########### Peptide plots ###########
+########### Peptide pull protein analysis ###########
 setwd("~/gdrive/AthroProteomics")
 load(file="working_20180821.RData")
 
-temp1<-pepDF %>% filter(Name=="HITSLEVIK" & Group != "Indeterminate")
-png(file="PF4_Pep1.png",height=3.5,width=6,units="in",res=300)
+# Which proteins:
+str_split(pepDFDRes$proteins,";")
+
+########### Peptide plots ###########
+temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("HITSLEVIK (Platelet factor 4)")+
-  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
-dev.off()
+  ggtitle("TYHVGEQWQK (Fibronectin)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
-temp2<-pepDF %>% filter(Name=="AGPHC[Carboxymethyl]PTAQLIATLK" & Group != "Indeterminate")
-png(file="PF4_Pep2.png",height=3.5,width=6,units="in",res=300)
-ggplot(temp2,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("AGPHC[Carboxymethyl]PTAQLIATLK (Platelet factor 4)")+
-  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
-dev.off()
+temp1<-pepDF %>% filter(Name=="LSSPAVITDK" & Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+ggtitle("LSSPAVITDK (Plasminogen)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
-temp1<-temp1 %>% dplyr::select(ptid,timept,Group,pep1=Intensity)
-temp2<-temp2 %>% dplyr::select(ptid,timept,Group,pep2=Intensity)
-temp3<-temp1 %>% left_join(temp2,by=c("ptid","timept","Group"))
-temp3$GT<-paste(temp3$Group,temp3$timept,sep=":")
-temp3$GT<-factor(temp3$GT,levels=c("sCAD:FU","sCAD:T0","Type 2:FU","Type 2:T0",
-                                   "Type 1:FU","Type 1:T0"))
-lm1<-lm(pep1~pep2,data=temp3)
-png(file="corPF4.png",height=4,width=5.5,units="in",res=300)
-ggplot(temp3,aes(x=pep1,y=pep2,col=GT)) + geom_point() + 
-  geom_abline(intercept=coef(lm1)[1],slope=coef(lm1)[2]) +
-  xlab("HITSLEVIK") + ylab("AGPHC[Carboxymethyl]PTAQLIATLK") +
-  theme_bw() + ggtitle("Platelet factor 4") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_color_manual(values=c("grey50","grey60","blue","navyblue","lightsalmon","red"))
-dev.off()
-
-temp1<-pepDF %>% filter(Name=="GTHC[Carboxymethyl]NQVEVIATLK" & Group != "Indeterminate")
-png(file="PBP_Pep1.png",height=3.5,width=6,units="in",res=300)
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("GTHC[Carboxymethyl]NQVEVIATLK (Platelet basic protein)")+
-  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
-dev.off()
+  ggtitle("LSSPAVITDK (Plasminogen)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
-temp1<-pepDF %>% filter(Name=="NIQSLEVIGK" & Group != "Indeterminate")
-png(file="PBP_Pep2.png",height=3.5,width=6,units="in",res=300)
+temp1<-pepDF %>% filter(Name=="KPVAFSDYIHPVC[Carboxymethyl]LPDR" & 
+                          Group != "Indeterminate")
+ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+  geom_point()+geom_line()+theme_bw()+
+  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("NIQSLEVIGK (Platelet basic protein)")+
-  theme(plot.title = element_text(hjust = 0.5))+xlab("Time-point")
-dev.off()
+  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
