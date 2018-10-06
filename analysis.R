@@ -568,7 +568,7 @@ pepDFRes$crit6 <- abs(pepDFRes$T0_Type1_sCAD)>.5
 pepDFRes$crit7 <- pepDFRes$crit5 & pepDFRes$crit6
 
 # Export peptide results:
-write.csv(pepDFRes,"pepDFRes.csv")
+# write.csv(pepDFRes,"pepDFRes.csv")
 
 ########### Protein level analysis ###########
 # Baseline
@@ -660,14 +660,10 @@ rm(corMat1,corMat2,lm1,lm1Emmeans,lm1FStat,lm1Pairs,mat1,mat2,allPeps,
    allPepsGood,i,peps,pepsAll,pepsInProt,prot,protList,tempProts,unqProts)
 save.image(file="working_20180821.RData")
 
-########### Peptide pull protein analysis ###########
-setwd("~/gdrive/AthroProteomics")
-load(file="working_20180821.RData")
-
-# Which proteins:
-str_split(pepDFDRes$proteins,";")
-
 ########### Peptide plots ###########
+pepDFRes$unqPep[pepDFRes$crit7 & pepDFRes$length<25]
+
+
 temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
 ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
@@ -700,3 +696,9 @@ ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
   ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
   theme(plot.title = element_text(hjust = 0.5))
 
+########### Peptide pull protein analysis ###########
+setwd("~/gdrive/AthroProteomics")
+load(file="working_20180821.RData")
+
+# Which proteins:
+str_split(pepDFRes$proteins,";")
