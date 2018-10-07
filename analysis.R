@@ -661,40 +661,63 @@ rm(corMat1,corMat2,lm1,lm1Emmeans,lm1FStat,lm1Pairs,mat1,mat2,allPeps,
 save.image(file="working_20180821.RData")
 
 ########### Peptide plots ###########
-pepDFRes$unqPep[pepDFRes$crit7 & pepDFRes$length<25]
+sigPeps<-pepDFRes$unqPep[pepDFRes$crit7 & pepDFRes$length<25 & pepDFRes$goodQuant > .05]
+pepsSig<-pepDFRes[pepDFRes$unqPep %in% sigPeps,]
+customTitles<-matrix(c(
+  "SAVQGPPER",pTitle="Immunoglobulin heavy constant alpha 1 or 2",
+  "GVWGSVC[Carboxymethyl]DDNWGEK","CD5 antigen-like",
+  "NIQEYLSILTDPDGK","Apolipoprotein B-100",
+  "SGSSTASWIQNVDTK","Apolipoprotein B-100",
+  "AGPHC[Carboxymethyl]PTAQLIATLK","Platelet Factor 4",
+  "GTHC[Carboxymethyl]NQVEVIATLK","Platelet Basic Protein",
+  "LIVAMSSWLQK","Apolipoprotein B-100",
+  "HIQNIDIQHLAGK","Apolipoprotein B-100",
+  "EELC[Carboxymethyl]TMFIR","Apolipoprotein B-100",
+  "HITSLEVIK","Platelet Factor 4",
+  "EVGTVLSQVYSK","Apolipoprotein B-100",
+  "ESQLPTVMDFR","Apolipoprotein B-100",
+  "YSFC[Carboxymethyl]TDHTVLVQTR","Fibronectin",
+  "ALVEQGFTVPEIK","Apolipoprotein B-100",
+  "ALNSIIDVYHK","Protein S100-A8",
+  "LSRPAVITDK","Apolipoprotein(a)",
+  "VIVIPVGIGPHANLK","von Willebrand factor",
+  "YTLFQIFSK","von Willebrand factor",
+  "IDLADFEK","Fibrinogen-like protein 1",
+  "NIQSLEVIGK","Platelet basic protein",
+  "VSSFYAK","Apolipoprotein B-100"
+  ),
+  ncol=2,byrow=TRUE)
 
+customTitles<-as.data.frame(customTitles)
+names(customTitles)<-c("unqPep","Title")
+pepsSig<-pepsSig %>% left_join(customTitles)
 
-temp1<-pepDF %>% filter(Name=="TYHVGEQWQK" & Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+ggtitle("TYHVGEQWQK (Fibronectin)")+
-  theme(plot.title = element_text(hjust = 0.5))
+# Plot function:
+pFun1<-function(iter,ylower,yupper){
+  temp1<-pepDF[pepDF$Name==pepsSig$unqPep[iter] & pepDF$Group != "Indeterminate",]
+  ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
+    geom_point()+geom_line()+ylim(ylower,yupper)+theme_bw()+facet_grid(~Group)+
+    ggtitle(pepsSig$unqPep[iter],subtitle=pepsSig$Title[iter])+ylab("Abundance")+
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+}
+pFun1(1,-7.75,3.5)
+pFun1(3,-2.25,3)
+pFun1(4,-3.25,3.0)
+pFun1(5,-5,6)
+pFun1(6,-8,5.25)
+pFun1(7,-2,2.5)
+pFun1(8,-1.25,2.25)
+pFun1(9,-3.25,3.5)
+pFun1(10,-7,5.75)
+pFun1(11,-3,3)
+pFun1(12,-4,3)
+pFun1(13,-5,3)
+pFun1(14,-3,3)
+pFun1(15,-3.5,3.25)
+pFun1(16,-10,10)
+pFun1(16,-5,5)
 
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("TYHVGEQWQK (Fibronectin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-temp1<-pepDF %>% filter(Name=="LSSPAVITDK" & Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+ggtitle("LSSPAVITDK (Plasminogen)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("LSSPAVITDK (Plasminogen)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-temp1<-pepDF %>% filter(Name=="KPVAFSDYIHPVC[Carboxymethyl]LPDR" & 
-                          Group != "Indeterminate")
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+
-  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
-  geom_point()+geom_line()+theme_bw()+facet_grid(~Group)+
-  ggtitle("KPVAFSDYIHPVC[Carboxymethyl]LPDR (Prothrombin)")+
-  theme(plot.title = element_text(hjust = 0.5))
 
 ########### Peptide pull protein analysis ###########
 setwd("~/gdrive/AthroProteomics")
