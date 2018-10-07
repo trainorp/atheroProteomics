@@ -545,7 +545,10 @@ pepDFRes<-pepDFT0Res %>% full_join(
 ########### Add peptide criteria ###########
 # Criteria 1: Fold change across time in Type 1 (ln-scale) > 1; 
 # Diff between sCAD and Type 1 fold change across time (ln-scale) > 0.75
-pepDFRes$crit1 <- abs(pepDFRes$D_Type1 > 1) & abs(pepDFRes$D_Type1_sCAD > .75)
+# pepDFRes$crit1 <- abs(pepDFRes$D_Type1 > 1) & abs(pepDFRes$D_Type1_sCAD > .75)
+
+# New Criteria 1: 
+pepDFRes$crit1<-pepDFRes$D_Type1_sCAD_p<.05
 
 # Criteria 2: If >1 other peptide from protein or family, correlation > .5?
 pepDFRes$crit2 <- FALSE
@@ -562,13 +565,16 @@ pepDFRes$crit4 <- !grepl("M\\[Oxid\\]",pepDFRes$unqPep)
 pepDFRes$crit5 <- pepDFRes$crit1 & pepDFRes$crit2 & pepDFRes$crit3 & pepDFRes$crit4
 
 # Criteria 6: If different between type 1 MI and sCAD at T0:
-pepDFRes$crit6 <- abs(pepDFRes$T0_Type1_sCAD)>.5
+# pepDFRes$crit6 <- abs(pepDFRes$T0_Type1_sCAD)>.5
+
+# New Criteria 6:
+pepDFRes$crit6<-pepDFRes$T0_Type1_sCAD_p<.1
 
 # Criteria 7: Criteria 5 and 6:
 pepDFRes$crit7 <- pepDFRes$crit5 & pepDFRes$crit6
 
 # Export peptide results:
-# write.csv(pepDFRes,"pepDFRes.csv")
+# write.csv(pepDFRes,"pepDFResV2.csv")
 
 ########### Protein level analysis ###########
 # Baseline
@@ -609,8 +615,6 @@ for(i in 1:nrow(protDFT0Res)){
   
   print(i)
 }
-protDFT0ResGood<-protDFT0Res %>% 
-  filter(T0_Type1_sCAD_p<.1 & T0_Type1_Type2_p<.1)
 
 ############ Protein Change across time ############
 protsW<-prots %>% dplyr::select(-rep) %>% 
@@ -658,33 +662,48 @@ for(i in 1:nrow(protDFDRes)){
 # Save
 rm(corMat1,corMat2,lm1,lm1Emmeans,lm1FStat,lm1Pairs,mat1,mat2,allPeps,
    allPepsGood,i,peps,pepsAll,pepsInProt,prot,protList,tempProts,unqProts)
-save.image(file="working_20180821.RData")
+save.image(file="working_20181007.RData")
 
 ########### Peptide plots ###########
+load(file="working_20181007.RData")
+
 sigPeps<-pepDFRes$unqPep[pepDFRes$crit7 & pepDFRes$length<25 & pepDFRes$goodQuant > .05]
+sigPeps2<-pepDFRes$unqPep[grepl("P04275",pepDFRes$proteins)]
+sigPeps<-c(sigPeps,sigPeps2)
 pepsSig<-pepDFRes[pepDFRes$unqPep %in% sigPeps,]
 customTitles<-matrix(c(
-  "SAVQGPPER",pTitle="Immunoglobulin heavy constant alpha 1 or 2",
-  "GVWGSVC[Carboxymethyl]DDNWGEK","CD5 antigen-like",
+  "NSEEFAAAMSR","Apolipoprotein B-100",
+  "YYTYLIMNK","Complement C3",
+  "C[Carboxymethyl]EWETPEGC[Carboxymethyl]EQVLTGK","C4b-binding protein alpha chain",
+  "LQQVLHAGSGPC[Carboxymethyl]LPHLLSR","Alpha-2-antiplasmin",
+  "LC[Carboxymethyl]MGSGLNLC[Carboxymethyl]EPNNK","Serotransferrin",
+  "KPVAFSDYIHPVC[Carboxymethyl]LPDR","Prothrombin",
+  "YEITTIHNLFR","Heparin cofactor 2",
+  "EVVADSVWVDVK","Complement C3",
+  "TVMVNIENPEGIPVK","Complement C3",
+  "TSSFALNLPTLPEVK","Apolipoprotein B-100",
+  "NFVASHIANILNSEELDIQDLK","Apolipoprotein B-100",
+  "YTIAALLSPYSYSTTAVVTNPK","Transthyretin",
+  "EALQGVGDMGR","Serum amyloid A-4 protein",
+  "EWFSETFQK","Apolipoprotein C-I",
   "NIQEYLSILTDPDGK","Apolipoprotein B-100",
   "SGSSTASWIQNVDTK","Apolipoprotein B-100",
   "AGPHC[Carboxymethyl]PTAQLIATLK","Platelet Factor 4",
-  "GTHC[Carboxymethyl]NQVEVIATLK","Platelet Basic Protein",
+  "AASGTTGTYQEWK","Apolipoprotein B-100",
+  "GTHC[Carboxymethyl]NQVEVIATLK","Platelet basic protein",
   "LIVAMSSWLQK","Apolipoprotein B-100",
   "HIQNIDIQHLAGK","Apolipoprotein B-100",
+  "EDVYVVGTVLR","C4b-binding protein alpha chain",
   "EELC[Carboxymethyl]TMFIR","Apolipoprotein B-100",
-  "HITSLEVIK","Platelet Factor 4",
-  "EVGTVLSQVYSK","Apolipoprotein B-100",
-  "ESQLPTVMDFR","Apolipoprotein B-100",
-  "YSFC[Carboxymethyl]TDHTVLVQTR","Fibronectin",
+  "HITSLEVIK","Platelet factor 4",
+  "SLMLHYEFLQR","Complement component C8 beta chain",
   "ALVEQGFTVPEIK","Apolipoprotein B-100",
-  "ALNSIIDVYHK","Protein S100-A8",
-  "LSRPAVITDK","Apolipoprotein(a)",
-  "VIVIPVGIGPHANLK","von Willebrand factor",
-  "YTLFQIFSK","von Willebrand factor",
-  "IDLADFEK","Fibrinogen-like protein 1",
+  "AVLTIDEK","Alpha-1-antitrypsin",
+  "LC[Carboxymethyl]GC[Carboxymethyl]LELLLQFDQK","RUN and FYVE domain-containing protein 4",
   "NIQSLEVIGK","Platelet basic protein",
-  "VSSFYAK","Apolipoprotein B-100"
+  "ATAVVDGAFK","Peroxiredoxin-2",
+  "VIVIPVGIGPHANLK","von Willebrand factor",
+  "YTLFQIFSK","von Willebrand factor"
   ),
   ncol=2,byrow=TRUE)
 
@@ -695,29 +714,50 @@ pepsSig<-pepsSig %>% left_join(customTitles)
 # Plot function:
 pFun1<-function(iter,ylower,yupper){
   temp1<-pepDF[pepDF$Name==pepsSig$unqPep[iter] & pepDF$Group != "Indeterminate",]
+  
   ggplot(temp1,aes(timept,Intensity,color=Group,group=ptid))+
     geom_point()+geom_line()+ylim(ylower,yupper)+theme_bw()+facet_grid(~Group)+
-    ggtitle(pepsSig$unqPep[iter],subtitle=pepsSig$Title[iter])+ylab("Abundance")+
+    ggtitle(pepsSig$unqPep[iter],
+            subtitle=paste0(pepsSig$Title[iter],". cor = ",round(pepsSig$otherCor[iter],3)))+
+    xlab("Time-point")+ylab("Abundance")+
     theme(plot.title = element_text(hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5))
-}
-pFun1(1,-7.75,3.5)
-pFun1(3,-2.25,3)
-pFun1(4,-3.25,3.0)
-pFun1(5,-5,6)
-pFun1(6,-8,5.25)
-pFun1(7,-2,2.5)
-pFun1(8,-1.25,2.25)
-pFun1(9,-3.25,3.5)
-pFun1(10,-7,5.75)
-pFun1(11,-3,3)
-pFun1(12,-4,3)
-pFun1(13,-5,3)
-pFun1(14,-3,3)
-pFun1(15,-3.5,3.25)
-pFun1(16,-10,10)
-pFun1(16,-5,5)
 
+}
+pepsSig<-pepsSig %>% arrange(Title,unqPep)
+
+# pFun1(1,-2,2)
+# pFun1(2,-3,3)
+pFun1(3,-1.5,1.75)
+pFun1(4,-3,3)
+pFun1(5,-3,4)
+pFun1(6,-1.25,2.1)
+pFun1(7,-2,2.25)
+pFun1(8,-1,1.25)
+pFun1(9,-1.5,3)
+pFun1(10,-1.1,1.5)
+pFun1(11,-3,3)
+pFun1(12,-1.1,1.3)
+pFun1(13,-1.2,1)
+# pFun1(14,-3,3)
+# pFun1(15,-3,3)
+# pFun1(16,-3,3)
+# pFun1(17,-3,3)
+# pFun1(18,-3,3)
+# pFun1(19,-3,3)
+pFun1(20,-1.1,1)
+# pFun1(21,-3,3)
+pFun1(22,-7.5,5.25)
+pFun1(23,-2,3)
+pFun1(24,-6.5,5.25)
+pFun1(25,-5,5)
+pFun1(26,-.9,.7)
+# pFun1(27,-3,3)
+# pFun1(28,-3,3)
+# pFun1(29,-3,3)
+pFun1(30,-1.2,1)
+pFun1(31,-5,3)
+pFun1(32,-4.5,3.2)
 
 ########### Peptide pull protein analysis ###########
 setwd("~/gdrive/AthroProteomics")
